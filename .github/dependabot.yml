@@ -1,20 +1,13 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
-
 version: 2
 updates:
 
-# enable dependabot updates for project dependencies
-
+  # enable dependabot updates for project dependencies
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "daily"
 
-# enable dependabot updates for workflow versions
-
+  # enable dependabot updates for workflow versions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
