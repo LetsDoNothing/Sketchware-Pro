@@ -11,6 +11,7 @@ import a.a.a.mB;
 import a.a.a.nd;
 import a.a.a.xB;
 import a.a.a.zd;
+import mod.hey.studios.util.Helper;
 
 public abstract class BaseSessionAppCompatActivity extends BaseAppCompatActivity {
     public final int l = 9001;
@@ -34,7 +35,7 @@ public abstract class BaseSessionAppCompatActivity extends BaseAppCompatActivity
 
     public void i(int requestCode) {
         if (!GB.h(getApplicationContext())) {
-            bB.a(getBaseContext(), xB.b().a(getApplicationContext(), 2131624932), 0).show();
+            bB.a(getBaseContext(), Helper.getResString(2131624932), 0).show();
         } else {
             k = requestCode;
             a(k, super.i.f());
@@ -44,16 +45,16 @@ public abstract class BaseSessionAppCompatActivity extends BaseAppCompatActivity
     public void j(int requestCode) {
         if (!Sp.a) {
             aB dialog = new aB(this);
-            dialog.b(xB.b().a(getApplicationContext(), 2131624962));
+            dialog.b(Helper.getResString(2131624962));
             dialog.a(2131165391);
-            dialog.a(xB.b().a(getApplicationContext(), 2131624960));
-            dialog.b(xB.b().a(getApplicationContext(), 2131625010), view -> {
+            dialog.a(Helper.getResString(2131624960));
+            dialog.b(Helper.getResString(2131625010), view -> {
                 if (!mB.a()) {
                     nd.a(BaseSessionAppCompatActivity.this, new String[]{"android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.READ_EXTERNAL_STORAGE"}, requestCode);
                     dialog.dismiss();
                 }
             });
-            dialog.a(xB.b().a(getApplicationContext(), 2131624974), view -> {
+            dialog.a(Helper.getResString(2131624974), view -> {
                 l();
                 dialog.dismiss();
             });
@@ -65,6 +66,7 @@ public abstract class BaseSessionAppCompatActivity extends BaseAppCompatActivity
         }
     }
 
+    @Override
     public boolean j() {
         return zd.a(getApplicationContext(), "android.permission.WRITE_EXTERNAL_STORAGE") == 0 && zd.a(getApplicationContext(), "android.permission.READ_EXTERNAL_STORAGE") == 0;
     }
@@ -72,16 +74,16 @@ public abstract class BaseSessionAppCompatActivity extends BaseAppCompatActivity
     public void k(int requestCode) {
         if (!Sp.a) {
             aB dialog = new aB(this);
-            dialog.b(xB.b().a(getApplicationContext(), 2131624962));
+            dialog.b(Helper.getResString(2131624962));
             dialog.a(2131165391);
-            dialog.a(xB.b().a(getApplicationContext(), 2131624961));
-            dialog.b(xB.b().a(getApplicationContext(), 2131625036), view -> {
+            dialog.a(Helper.getResString(2131624961));
+            dialog.b(Helper.getResString(2131625036), view -> {
                 if (!mB.a()) {
                     h(requestCode);
                     dialog.dismiss();
                 }
             });
-            dialog.a(xB.b().a(getApplicationContext(), 2131624974), view -> {
+            dialog.a(Helper.getResString(2131624974), view -> {
                 m();
                 dialog.dismiss();
             });
@@ -97,6 +99,7 @@ public abstract class BaseSessionAppCompatActivity extends BaseAppCompatActivity
 
     public abstract void m();
 
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != 9001) {
@@ -109,10 +112,12 @@ public abstract class BaseSessionAppCompatActivity extends BaseAppCompatActivity
 
     }
 
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
 
+    @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         for (String permission : permissions) {

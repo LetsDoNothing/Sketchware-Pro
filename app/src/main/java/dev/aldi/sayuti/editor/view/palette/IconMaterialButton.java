@@ -1,28 +1,33 @@
 package dev.aldi.sayuti.editor.view.palette;
 
 import android.content.Context;
+import android.view.ViewGroup;
 
 import com.besome.sketch.beans.LayoutBean;
 import com.besome.sketch.beans.ViewBean;
 import com.besome.sketch.editor.view.palette.IconBase;
+import com.sketchware.remod.R;
 
 public class IconMaterialButton extends IconBase {
+
     public IconMaterialButton(Context context) {
         super(context);
     }
 
+    @Override
     public void a(Context context) {
-        IconMaterialButton.super.a(context);
-        setWidgetImage(2131166353);
+        super.a(context);
+        setWidgetImage(R.drawable.widget_material_button);
         setWidgetName("MaterialButton");
     }
 
+    @Override
     public ViewBean getBean() {
         ViewBean viewBean = new ViewBean();
         viewBean.type = 41;
         LayoutBean layoutBean = viewBean.layout;
-        layoutBean.orientation = 1;
-        layoutBean.width = -2;
+        layoutBean.orientation = VERTICAL;
+        layoutBean.width = ViewGroup.LayoutParams.WRAP_CONTENT;
         layoutBean.gravity = 17;
         layoutBean.paddingLeft = 8;
         layoutBean.paddingTop = 8;

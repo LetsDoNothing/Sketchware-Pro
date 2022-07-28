@@ -31,18 +31,21 @@ public class DexCompiler {
             throw new CompilationFailedException("Invalid minSdkVersion specified in Project Settings", e);
         }
 
-        assert Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
+        if (!(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)) {
+            throw new IllegalStateException("Can't use d8 as API level " + Build.VERSION.SDK_INT + " < 26");
+        }
+
         Collection<Path> programFiles = new ArrayList<>();
         if (compileHelper.proguard.isProguardEnabled()) {
-            programFiles.add(new File(compileHelper.yq.classes_proguard).toPath());
+            programFiles.add(new File(compileHelper.yq.classesProGuardPath).toPath());
         } else {
-            for (String filePath : ProcessingFiles.getListResource(compileHelper.yq.u)) {
+            for (String filePath : ProcessingFiles.getListResource(compileHelper.yq.compiledClassesPath)) {
                 programFiles.add(new File(filePath).toPath());
             }
         }
 
         Collection<Path> libraryFiles = new ArrayList<>();
-        for (String jarPath : compileHelper.d().split(":")) {
+        for (String jarPath : compileHelper.getClasspath().split(":")) {
             libraryFiles.add(new File(jarPath).toPath());
         }
 
@@ -51,7 +54,7 @@ public class DexCompiler {
                 .setIntermediate(true)
                 .setMinApiLevel(minApiLevel)
                 .addLibraryFiles(libraryFiles)
-                .setOutput(new File(compileHelper.yq.t, "dex").toPath(), OutputMode.DexIndexed)
+                .setOutput(new File(compileHelper.yq.binDirectoryPath, "dex").toPath(), OutputMode.DexIndexed)
                 .addProgramFiles(programFiles)
                 .build());
     }

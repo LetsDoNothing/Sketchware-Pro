@@ -29,6 +29,14 @@ import mod.hey.studios.util.Helper;
 
 public class ProgramInfoActivity extends BaseAppCompatActivity implements OnClickListener {
 
+    private static final int ITEM_SYSTEM_INFORMATION = 1;
+    private static final int ITEM_UPDATE_LOG = 4;
+    private static final int ITEM_SOCIAL_NETWORK = 5;
+    private static final int ITEM_FACEBOOK = 6;
+    private static final int ITEM_MEDIUM = 8;
+    private static final int ITEM_OPEN_SOURCE_LICENSES = 15;
+    private static final int ITEM_SUGGEST_IDEAS = 17;
+
     private LinearLayout content;
 
     private void addTwoLineItem(int key, int name, int description) {
@@ -43,12 +51,12 @@ public class ProgramInfoActivity extends BaseAppCompatActivity implements OnClic
         content.addView(item);
         item.setBackgroundColor(0xfff6f6f6);
         item.setOnClickListener(this);
-        if (key != 4) {
-            if (key == 6 || key == 8) {
+        if (key != ITEM_UPDATE_LOG) {
+            if (key == ITEM_FACEBOOK || key == ITEM_MEDIUM) {
                 return;
             }
 
-            if (key != 17) {
+            if (key != ITEM_SUGGEST_IDEAS) {
                 return;
             }
         }
@@ -65,30 +73,27 @@ public class ProgramInfoActivity extends BaseAppCompatActivity implements OnClic
         item.setKey(key);
         item.setName(name);
         content.addView(item);
-        if (key == 1 || key == 2 || key == 14 || key == 15) {
+        if (key == ITEM_SYSTEM_INFORMATION || key == ITEM_OPEN_SOURCE_LICENSES) {
             item.setOnClickListener(this);
         }
     }
 
     private void openMedium() {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(xB.b().a(getApplicationContext(), R.string.besome_blog_url)));
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(Helper.getResString(R.string.besome_blog_url)));
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-        startActivity(Intent.createChooser(intent, xB.b().a(getApplicationContext(), R.string.common_word_choose)));
+        startActivity(Intent.createChooser(intent, Helper.getResString(R.string.common_word_choose)));
     }
 
     private void resetDialog() {
         aB dialog = new aB(this);
-        dialog.b(xB.b().a(getApplicationContext(), R.string.program_information_reset_system_title));
+        dialog.b(Helper.getResString(R.string.program_information_reset_system_title));
         dialog.a(R.drawable.rollback_96);
         View rootView = wB.a(this, R.layout.all_init_popup);
         RadioGroup radioGroup = rootView.findViewById(R.id.rg_type);
-        ((RadioButton) rootView.findViewById(R.id.rb_all)).setText(xB.b().a(getApplicationContext(), R.string.program_information_reset_system_title_all_settings_data));
-        ((RadioButton) rootView.findViewById(R.id.rb_only_config)).setText(xB.b().a(getApplicationContext(), R.string.program_information_reset_system_title_all_settings));
+        ((RadioButton) rootView.findViewById(R.id.rb_all)).setText(Helper.getResString(R.string.program_information_reset_system_title_all_settings_data));
+        ((RadioButton) rootView.findViewById(R.id.rb_only_config)).setText(Helper.getResString(R.string.program_information_reset_system_title_all_settings));
         dialog.a(rootView);
-        dialog.b(xB.b().a(getApplicationContext(), R.string.common_word_yes), v -> {
+        dialog.b(Helper.getResString(R.string.common_word_yes), v -> {
             if (!mB.a()) {
                 int buttonId = radioGroup.getCheckedRadioButtonId();
                 boolean resetOnlySettings = buttonId != R.id.rb_all;
@@ -97,28 +102,25 @@ public class ProgramInfoActivity extends BaseAppCompatActivity implements OnClic
                 finish();
             }
         });
-        dialog.a(xB.b().a(getApplicationContext(), R.string.common_word_cancel), v -> dialog.dismiss());
+        dialog.a(Helper.getResString(R.string.common_word_cancel), Helper.getDialogDismissListener(dialog));
         dialog.show();
     }
 
     private void openFacebook() {
-        String facebookPageUrl = xB.b().a(getApplicationContext(), R.string.facebook_url);
+        String facebookPageUrl = Helper.getResString(R.string.facebook_url);
 
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("fb://facewebmodal/f?href=" + facebookPageUrl)));
         } catch (Exception e) {
             startActivity(Intent.createChooser(new Intent(Intent.ACTION_VIEW, Uri.parse(facebookPageUrl)),
-                    xB.b().a(getApplicationContext(), R.string.common_word_choose)));
+                    Helper.getResString(R.string.common_word_choose)));
         }
     }
 
     private void openIdeasSite() {
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://ideas.sketchware.io/"));
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-        startActivity(Intent.createChooser(intent, xB.b().a(getApplicationContext(), R.string.common_word_choose)));
+        startActivity(Intent.createChooser(intent, Helper.getResString(R.string.common_word_choose)));
     }
 
     @Override
@@ -132,13 +134,13 @@ public class ProgramInfoActivity extends BaseAppCompatActivity implements OnClic
             if (v instanceof PropertyOneLineItem) {
                 key = ((PropertyOneLineItem) v).getKey();
                 switch (key) {
-                    case 1:
+                    case ITEM_SYSTEM_INFORMATION:
                         toSystemInfoActivity();
                         break;
 
-                    case 15:
+                    case ITEM_OPEN_SOURCE_LICENSES:
                         if (!GB.h(getApplicationContext())) {
-                            bB.a(getApplicationContext(), xB.b().a(getApplicationContext(), R.string.common_message_check_network), 0).show();
+                            bB.a(getApplicationContext(), Helper.getResString(R.string.common_message_check_network), bB.TOAST_NORMAL).show();
                         } else {
                             toLicenseActivity();
                         }
@@ -151,23 +153,23 @@ public class ProgramInfoActivity extends BaseAppCompatActivity implements OnClic
             if (v instanceof PropertyTwoLineItem) {
                 key = ((PropertyTwoLineItem) v).getKey();
                 switch (key) {
-                    case 4:
+                    case ITEM_UPDATE_LOG:
                         if (!GB.h(getApplicationContext())) {
-                            bB.a(getApplicationContext(), xB.b().a(getApplicationContext(), R.string.common_message_check_network), 0).show();
+                            bB.a(getApplicationContext(), Helper.getResString(R.string.common_message_check_network), bB.TOAST_NORMAL).show();
                         } else {
                             openBlog();
                         }
                         break;
 
-                    case 17:
+                    case ITEM_SUGGEST_IDEAS:
                         openIdeasSite();
                         break;
 
-                    case 8:
+                    case ITEM_MEDIUM:
                         openMedium();
                         break;
 
-                    case 6:
+                    case ITEM_FACEBOOK:
                         openFacebook();
                         break;
 
@@ -186,51 +188,42 @@ public class ProgramInfoActivity extends BaseAppCompatActivity implements OnClic
         d().d(true);
         d().e(true);
         findViewById(R.id.layout_main_logo).setVisibility(View.GONE);
-        d().a(xB.b().a(this, R.string.main_drawer_title_program_information));
+        d().a(Helper.getResString(R.string.main_drawer_title_program_information));
         toolbar.setNavigationOnClickListener(Helper.getBackPressedClickListener(this));
         content = findViewById(R.id.content);
 
         TextView version = findViewById(R.id.tv_sketch_ver);
         version.setText("Version " + GB.e(getApplicationContext()));
         Button resetSystem = findViewById(R.id.btn_app_init);
-        resetSystem.setText(xB.b().a(getApplicationContext(), R.string.program_information_button_reset_system));
+        resetSystem.setText(Helper.getResString(R.string.program_information_button_reset_system));
         resetSystem.setOnClickListener(this);
         Button checkForUpdates = findViewById(R.id.btn_app_upgrade);
-        checkForUpdates.setText(xB.b().a(getApplicationContext(), R.string.program_information_button_check_update));
+        checkForUpdates.setText(Helper.getResString(R.string.program_information_button_check_update));
         checkForUpdates.setOnClickListener(this);
-        addTwoLineItem(4, R.string.program_information_title_docs, R.string.docs_url);
-        addTwoLineItem(17, R.string.program_information_title_suggest_ideas, R.string.ideas_url);
-        addSingleLineItem(5, R.string.title_community);
-        addTwoLineItem(6, R.string.title_facebook_community, R.string.facebook_url);
-        addTwoLineItem(8, R.string.title_besome_blog, R.string.besome_blog_url);
-        addSingleLineItem(1, R.string.program_information_title_system_information);
-        addSingleLineItem(15, R.string.program_information_title_open_source_license);
+        addTwoLineItem(ITEM_UPDATE_LOG, R.string.program_information_title_docs, R.string.docs_url);
+        addTwoLineItem(ITEM_SUGGEST_IDEAS, R.string.program_information_title_suggest_ideas, R.string.ideas_url);
+        addSingleLineItem(ITEM_SOCIAL_NETWORK, R.string.title_community);
+        addTwoLineItem(ITEM_FACEBOOK, R.string.title_facebook_community, R.string.facebook_url);
+        addTwoLineItem(ITEM_MEDIUM, R.string.title_besome_blog, R.string.besome_blog_url);
+        addSingleLineItem(ITEM_SYSTEM_INFORMATION, R.string.program_information_title_system_information);
+        addSingleLineItem(ITEM_OPEN_SOURCE_LICENSES, R.string.program_information_title_open_source_license);
     }
 
     private void toLicenseActivity() {
         Intent intent = new Intent(getApplicationContext(), LicenseActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
         startActivity(intent);
     }
 
     private void openBlog() {
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://docs.sketchware.io/blog"));
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-        startActivity(Intent.createChooser(intent, xB.b().a(getApplicationContext(), R.string.common_word_choose)));
+        startActivity(Intent.createChooser(intent, Helper.getResString(R.string.common_word_choose)));
     }
 
     private void toSystemInfoActivity() {
         Intent intent = new Intent(getApplicationContext(), SystemInfoActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
         startActivity(intent);
     }
 }

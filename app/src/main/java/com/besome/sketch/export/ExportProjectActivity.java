@@ -157,6 +157,8 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
 
     private void exportSrc() {
         try {
+            FileUtil.deleteFile(project_metadata.projectMyscPath);
+
             hC hCVar = new hC(sc_id);
             kC kCVar = new kC(sc_id);
             eC eCVar = new eC(sc_id);
@@ -176,9 +178,9 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                 project_metadata.a(wq.e() + File.separator + sc_id + File.separator + "icon.png");
             }
             project_metadata.a();
-            kCVar.b(project_metadata.w + File.separator + "drawable-xhdpi");
-            kCVar.c(project_metadata.w + File.separator + "raw");
-            kCVar.a(project_metadata.A + File.separator + "fonts");
+            kCVar.b(project_metadata.resDirectoryPath + File.separator + "drawable-xhdpi");
+            kCVar.c(project_metadata.resDirectoryPath + File.separator + "raw");
+            kCVar.a(project_metadata.assetsPath + File.separator + "fonts");
             project_metadata.f();
 
             /* It makes no sense that those methods aren't static */
@@ -189,26 +191,34 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
             File pathNativeLibraries = new File(util.getPathNativelibs(sc_id));
 
             if (pathJava.exists()) {
-                FileUtil.copyDirectory(pathJava, new File(project_metadata.y));
+                FileUtil.copyDirectory(pathJava, new File(project_metadata.javaFilesPath + File.separator + project_metadata.packageNameAsFolders));
             }
             if (pathResources.exists()) {
-                FileUtil.copyDirectory(pathResources, new File(project_metadata.w));
+                FileUtil.copyDirectory(pathResources, new File(project_metadata.resDirectoryPath));
             }
             if (pathAssets.exists()) {
-                FileUtil.copyDirectory(pathAssets, new File(project_metadata.A));
+                FileUtil.copyDirectory(pathAssets, new File(project_metadata.assetsPath));
             }
             if (pathNativeLibraries.exists()) {
-                FileUtil.copyDirectory(pathNativeLibraries, new File(project_metadata.c, "jni"));
+                FileUtil.copyDirectory(pathNativeLibraries, new File(project_metadata.generatedFilesPath, "jniLibs"));
             }
 
             ArrayList<String> toCompress = new ArrayList<>();
-            toCompress.add(project_metadata.c);
+            toCompress.add(project_metadata.projectMyscPath);
             String exportedFilename = yB.c(sc_metadata, "my_ws_name") + ".zip";
-            project_metadata.J = wq.s() + File.separator + "export_src" + File.separator + exportedFilename;
-            if (file_utility.e(project_metadata.J)) {
-                file_utility.c(project_metadata.J);
+
+            String exportedSourcesZipPath = wq.s() + File.separator + "export_src" + File.separator + exportedFilename;
+            if (file_utility.e(exportedSourcesZipPath)) {
+                file_utility.c(exportedSourcesZipPath);
             }
-            new KB().a(project_metadata.J, toCompress, project_metadata.K);
+
+            ArrayList<String> toExclude = new ArrayList<>();
+            if (!new File(new FilePathUtil().getPathJava(sc_id) + File.separator + "SketchApplication.java").exists()) {
+                toExclude.add("SketchApplication.java");
+            }
+            toExclude.add("DebugActivity.java");
+
+            new KB().a(exportedSourcesZipPath, toCompress, toExclude);
             project_metadata.e();
             runOnUiThread(() -> e(exportedFilename));
         } catch (Exception e) {
@@ -668,7 +678,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
 
             try {
                 publishProgress("Deleting temporary files...");
-                FileUtil.deleteFile(project_metadata.c);
+                FileUtil.deleteFile(project_metadata.projectMyscPath);
 
                 publishProgress(Helper.getResString(R.string.design_run_title_ready_to_build));
                 oB oBVar = new oB();
@@ -690,8 +700,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                     cancel(true);
                     return;
                 }
-                project_metadata.c();
-                File outputFile = new File(getCorrectResultFilename(project_metadata.I));
+                File outputFile = new File(getCorrectResultFilename(project_metadata.releaseApkPath));
                 if (outputFile.exists()) {
                     if (!outputFile.delete()) {
                         throw new IllegalStateException("Couldn't delete file " + outputFile.getAbsolutePath());
@@ -711,9 +720,9 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                     project_metadata.a(wq.e() + File.separator + sc_id + File.separator + "icon.png");
                 }
                 project_metadata.a();
-                kCVar.b(project_metadata.w + File.separator + "drawable-xhdpi");
-                kCVar.c(project_metadata.w + File.separator + "raw");
-                kCVar.a(project_metadata.A + File.separator + "fonts");
+                kCVar.b(project_metadata.resDirectoryPath + File.separator + "drawable-xhdpi");
+                kCVar.c(project_metadata.resDirectoryPath + File.separator + "raw");
+                kCVar.a(project_metadata.assetsPath + File.separator + "fonts");
                 project_metadata.b(hCVar, eCVar, iCVar, true);
                 if (d) {
                     cancel(true);
@@ -723,7 +732,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
 
                 /* Check AAPT/AAPT2 */
                 publishProgress("Extracting AAPT/AAPT2 binaries...");
-                c.i();
+                c.maybeExtractAapt2();
                 if (d) {
                     cancel(true);
                     return;
@@ -731,14 +740,14 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
 
                 /* Check built-in libraries */
                 publishProgress("Extracting built-in libraries...");
-                c.j();
+                c.getBuiltInLibrariesReady();
                 if (d) {
                     cancel(true);
                     return;
                 }
 
                 publishProgress("AAPT2 is running...");
-                c.a();
+                c.compileResources();
                 if (d) {
                     cancel(true);
                     return;
@@ -751,14 +760,14 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                 }
 
                 publishProgress("Java is compiling...");
-                c.f();
+                c.compileJavaCode();
                 if (d) {
                     cancel(true);
                     return;
                 }
 
                 /* Encrypt Strings in classes if enabled */
-                StringfogHandler stringfogHandler = new StringfogHandler(project_metadata.b);
+                StringfogHandler stringfogHandler = new StringfogHandler(project_metadata.sc_id);
                 stringfogHandler.start(null, c);
                 if (d) {
                     cancel(true);
@@ -766,7 +775,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                 }
 
                 /* Obfuscate classes if enabled */
-                ProguardHandler proguardHandler = new ProguardHandler(project_metadata.b);
+                ProguardHandler proguardHandler = new ProguardHandler(project_metadata.sc_id);
                 proguardHandler.start(null, c);
                 if (d) {
                     cancel(true);
@@ -775,7 +784,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
 
                 /* Create DEX file(s) */
                 publishProgress(c.getDxRunningText());
-                c.c();
+                c.createDexFilesFromClasses();
                 if (d) {
                     cancel(true);
                     return;
@@ -783,7 +792,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
 
                 /* Merge DEX file(s) with libraries' dexes */
                 publishProgress("Merging libraries' DEX files...");
-                c.h();
+                c.getDexFilesReady();
                 if (d) {
                     onCancelled();
                     return;
@@ -800,7 +809,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                     publishProgress("Signing app bundle...");
 
                     String createdBundlePath = AppBundleCompiler.getDefaultAppBundleOutputFile(
-                            ExportProjectActivity.this, sc_id)
+                                    ExportProjectActivity.this, sc_id)
                             .getAbsolutePath();
                     String signedAppBundleDirectoryPath = FileUtil.getExternalStorageDir()
                             + File.separator + "sketchware"
@@ -832,7 +841,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                     }
                 } else {
                     publishProgress("Building APK...");
-                    c.g();
+                    c.buildApk();
                     if (d) {
                         cancel(true);
                         return;
@@ -842,7 +851,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                     if (signWithTestkey) {
                         ZipSigner signer = new ZipSigner();
                         signer.setKeymode(ZipSigner.KEY_TESTKEY);
-                        signer.signZip(c.yq.G, c.yq.unalignedSignedApkPath);
+                        signer.signZip(c.yq.unsignedUnalignedApkPath, c.yq.unalignedSignedApkPath);
                     } else if (isResultJarSigningEnabled()) {
                         Security.addProvider(new org.spongycastle.jce.provider.BouncyCastleProvider());
                         CustomKeySigner.signZip(
@@ -852,11 +861,11 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                                 signingAliasName,
                                 signingKeystorePassword,
                                 signingAlgorithm,
-                                c.yq.G,
+                                c.yq.unsignedUnalignedApkPath,
                                 c.yq.unalignedSignedApkPath
                         );
                     } else {
-                        FileUtil.copyFile(c.yq.G, c.yq.unalignedSignedApkPath);
+                        FileUtil.copyFile(c.yq.unsignedUnalignedApkPath, c.yq.unalignedSignedApkPath);
                     }
                     if (d) {
                         cancel(true);
@@ -864,14 +873,14 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                     }
 
                     publishProgress("Aligning APK...");
-                    c.runZipalign(c.yq.unalignedSignedApkPath, getCorrectResultFilename(c.yq.I));
+                    c.runZipalign(c.yq.unalignedSignedApkPath, getCorrectResultFilename(c.yq.releaseApkPath));
                 }
             } catch (Throwable throwable) {
                 if (throwable instanceof LoadKeystoreException &&
                         "Incorrect password, or integrity check failed.".equals(throwable.getMessage())) {
                     runOnUiThread(() -> ExportProjectActivity.this.b(
                             "Either an incorrect password was entered, " +
-                                    "or your key store is corrupted."));
+                                    "or your key store is corrupt."));
                 } else {
                     Log.e("AppExporter", throwable.getMessage(), throwable);
                     runOnUiThread(() ->
@@ -896,7 +905,6 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
         public void onCancelled() {
             super.onCancelled();
             c = null;
-            project_metadata.b();
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             // Dismiss the ProgressDialog
             i();
@@ -936,16 +944,15 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
          */
         @Override // a.a.a.MA
         public void a() {
-            project_metadata.b();
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             // Dismiss the ProgressDialog
             i();
 
-            if (new File(getCorrectResultFilename(project_metadata.I)).exists()) {
-                f(getCorrectResultFilename(project_metadata.d + "_release.apk"));
+            if (new File(getCorrectResultFilename(project_metadata.releaseApkPath)).exists()) {
+                f(getCorrectResultFilename(project_metadata.projectName + "_release.apk"));
             }
 
-            String aabFilename = getCorrectResultFilename(project_metadata.d + ".aab");
+            String aabFilename = getCorrectResultFilename(project_metadata.projectName + ".aab");
             if (buildingAppBundle && new File(Environment.getExternalStorageDirectory(),
                     "sketchware" + File.separator + "signed_aab" + File.separator + aabFilename).exists()) {
                 aB dialog = new aB(ExportProjectActivity.this);
@@ -964,7 +971,6 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
          */
         @Override // a.a.a.MA
         public void a(String str) {
-            project_metadata.b();
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             // Dismiss the ProgressDialog
             i();
@@ -1034,7 +1040,7 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
         }
 
         public void publicPublishProgress(String... values) {
-            publicPublishProgress(values);
+            publishProgress(values);
         }
     }
 }

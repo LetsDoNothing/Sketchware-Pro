@@ -22,7 +22,7 @@ public class Hx {
     private final ArrayList<c> f = new ArrayList<>();
     private final ArrayList<c> g = new ArrayList<>();
     private final ArrayList<b> h = new ArrayList<>();
-    private final ArrayList<String> i = new ArrayList<>();
+    private final ArrayList<String> imports = new ArrayList<>();
     private final HashMap<String, String> j = new HashMap<>();
     public String k = "";
     public String l = "";
@@ -60,13 +60,13 @@ public class Hx {
         a(eC.g(projectFileBean.getJavaName()), eC.b(projectFileBean.getJavaName()));
     }
 
-    public String a() {
+    public String getOnActivityResultSwitchCases() {
         StringBuilder sb = new StringBuilder(4096);
         for (b value : h) {
             String code = value.getCode();
             if (sb.length() > 0 && code.length() > 0) {
-                sb.append("\r\n");
-                sb.append("\r\n");
+                sb.append(Jx.EOL);
+                sb.append(Jx.EOL);
             }
             sb.append(code);
         }
@@ -119,9 +119,9 @@ public class Hx {
         target.setLogic(eventLogic);
     }
 
-    public void a(String str, String str2, String str3) {
-        if (!j.containsKey(str)) {
-            j.put(str, Lx.b(str, str2, str3));
+    public void a(String eventName, String viewType, String viewId) {
+        if (!j.containsKey(eventName)) {
+            j.put(eventName, Lx.b(eventName, viewType, viewId));
         }
     }
 
@@ -145,7 +145,7 @@ public class Hx {
 
                         case ComponentBean.COMPONENT_TYPE_CAMERA:
                         case ComponentBean.COMPONENT_TYPE_FILE_PICKER:
-                        case 31:
+                        case ComponentBean.COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN:
                             a(eventBean.targetType, eventBean.targetId, eventBean.eventName, eventLogic);
                             break;
 
@@ -190,8 +190,8 @@ public class Hx {
         for (a value : e) {
             String code = value.getCode();
             if (sb.length() > 0 && code.length() > 0) {
-                sb.append("\r\n");
-                sb.append("\r\n");
+                sb.append(Jx.EOL);
+                sb.append(Jx.EOL);
             }
             sb.append(code);
         }
@@ -230,8 +230,8 @@ public class Hx {
         for (c next : g) {
             String a2 = next.a();
             if (sb.length() > 0 && a2.length() > 0) {
-                sb.append("\r\n");
-                sb.append("\r\n");
+                sb.append(Jx.EOL);
+                sb.append(Jx.EOL);
             }
             sb.append(a2);
         }
@@ -248,10 +248,10 @@ public class Hx {
     }
 
     /**
-     * @return {@link Hx#i}
+     * @return {@link Hx#imports}
      */
-    public ArrayList<String> e() {
-        return i;
+    public ArrayList<String> getImports() {
+        return imports;
     }
 
     private void e(String targetId, String eventName, String eventLogic) {
@@ -269,8 +269,8 @@ public class Hx {
             next.b();
             String a2 = next.a();
             if (sb.length() > 0 && a2.length() > 0) {
-                sb.append("\r\n");
-                sb.append("\r\n");
+                sb.append(Jx.EOL);
+                sb.append(Jx.EOL);
             }
             sb.append(a2);
         }
@@ -282,8 +282,8 @@ public class Hx {
         for (c value : c) {
             String a2 = value.a();
             if (sb.length() > 0 && a2.length() > 0) {
-                sb.append("\r\n");
-                sb.append("\r\n");
+                sb.append(Jx.EOL);
+                sb.append(Jx.EOL);
             }
             sb.append(a2);
         }
@@ -381,8 +381,8 @@ public class Hx {
             for (d value : c) {
                 String a2 = value.a(a);
                 if (sb.length() > 0 && a2.length() > 0) {
-                    sb.append("\r\n");
-                    sb.append("\r\n");
+                    sb.append(Jx.EOL);
+                    sb.append(Jx.EOL);
                 }
                 sb.append(a2);
             }
@@ -400,7 +400,7 @@ public class Hx {
                 }
 
                 if (d.b) {
-                    this.d.i.addAll(mq.d(d.a));
+                    this.d.imports.addAll(mq.d(d.a));
                 }
             }
         }
@@ -434,8 +434,8 @@ public class Hx {
             for (a value : c) {
                 String code = value.getCode();
                 if (sb.length() > 0 && code.length() > 0) {
-                    sb.append("\r\n");
-                    sb.append("\r\n");
+                    sb.append(Jx.EOL);
+                    sb.append(Jx.EOL);
                 }
                 sb.append(code);
             }

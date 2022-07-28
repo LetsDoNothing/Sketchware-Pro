@@ -73,7 +73,6 @@ import a.a.a.mB;
 import a.a.a.rs;
 import a.a.a.uo;
 import a.a.a.wq;
-import a.a.a.xB;
 import a.a.a.yB;
 import a.a.a.yq;
 import a.a.a.zy;
@@ -87,7 +86,6 @@ import mod.SketchwareUtil;
 import mod.agus.jcoderz.editor.manage.permission.ManagePermissionActivity;
 import mod.agus.jcoderz.editor.manage.resource.ManageResourceActivity;
 import mod.agus.jcoderz.lib.FileUtil;
-import mod.alucard.tn.apksigner.ApkSigner;
 import mod.hey.studios.activity.managers.assets.ManageAssetsActivity;
 import mod.hey.studios.activity.managers.java.ManageJavaActivity;
 import mod.hey.studios.activity.managers.nativelib.ManageNativelibsActivity;
@@ -101,7 +99,7 @@ import mod.hey.studios.project.stringfog.ManageStringfogActivity;
 import mod.hey.studios.project.stringfog.StringfogHandler;
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.activities.android_manifest.AndroidManifestInjection;
-import mod.hosni.fraj.compilerlog.CompileErrorSaver;
+import mod.jbk.diagnostic.CompileErrorSaver;
 import mod.jbk.diagnostic.MissingFileException;
 import mod.jbk.util.LogUtil;
 import mod.khaled.logcat.LogReaderActivity;
@@ -175,9 +173,9 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
      * @param error The error, to be later displayed as text in {@link CompileLogActivity}
      */
     private void indicateCompileErrorOccurred(String error) {
-        new CompileErrorSaver(q.b).writeLogsToFile(error);
+        new CompileErrorSaver(q.sc_id).writeLogsToFile(error);
         Snackbar snackbar = Snackbar.a(coordinatorLayout, "Show compile log", -2 /* BaseTransientBottomBar.LENGTH_INDEFINITE */);
-        snackbar.a(xB.b().a(getApplicationContext(), R.string.common_word_show), v -> {
+        snackbar.a(Helper.getResString(R.string.common_word_show), v -> {
             if (!mB.a()) {
                 snackbar.c();
                 Intent intent = new Intent(getApplicationContext(), CompileLogActivity.class);
@@ -224,13 +222,13 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
     private void installBuiltApk() {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         if (Build.VERSION.SDK_INT >= 24) {
-            Uri apkUri = FileProvider.a(getApplicationContext(), getApplicationContext().getPackageName() + ".provider", new File(q.H));
+            Uri apkUri = FileProvider.a(getApplicationContext(), getApplicationContext().getPackageName() + ".provider", new File(q.finalToInstallApkPath));
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
             intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
         } else {
-            intent.setDataAndType(Uri.fromFile(new File(q.H)), "application/vnd.android.package-archive");
+            intent.setDataAndType(Uri.fromFile(new File(q.finalToInstallApkPath)), "application/vnd.android.package-archive");
         }
 
         startActivity(intent);
@@ -335,9 +333,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
     public void onClick(View v) {
         if (!mB.a()) {
             if (v.getId() == R.id.btn_execute) {
-                if (KotlinCompilerBridge.maybeCheckIfDeviceSupportsKotlinc(this, q)) {
-                    new BuildAsyncTask(getApplicationContext()).execute();
-                }
+                new BuildAsyncTask(getApplicationContext()).execute();
             } else if (v.getId() == R.id.btn_compiler_opt) {
                 PopupMenu popupMenu = new PopupMenu(this, findViewById(R.id.btn_compiler_opt));
                 Menu menu = popupMenu.getMenu();
@@ -347,7 +343,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                 menu.add(Menu.NONE, 2, Menu.NONE, "Clean temporary files");
                 menu.add(Menu.NONE, 3, Menu.NONE, "Show last compile error");
                 menu.add(Menu.NONE, 5, Menu.NONE, "Show source code");
-                if (FileUtil.isExistFile(q.H)) {
+                if (FileUtil.isExistFile(q.finalToInstallApkPath)) {
                     menu.add(Menu.NONE, 4, Menu.NONE, "Install last built APK");
                 }
 
@@ -359,7 +355,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
 
                         case 2:
                             new Thread(() -> {
-                                FileUtil.deleteFile(q.c);
+                                FileUtil.deleteFile(q.projectMyscPath);
                                 runOnUiThread(() ->
                                         SketchwareUtil.toast("Done cleaning temporary files!"));
                             }).start();
@@ -370,7 +366,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                             break;
 
                         case 4:
-                            if (FileUtil.isExistFile(q.H)) {
+                            if (FileUtil.isExistFile(q.finalToInstallApkPath)) {
                                 installBuiltApk();
                             } else {
                                 SketchwareUtil.toast("APK doesn't exist anymore");
@@ -425,7 +421,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
         drawer.setDrawerLockMode(1 /* DrawerLayout#LOCK_MODE_LOCKED_CLOSED */);
         coordinatorLayout = findViewById(R.id.layout_coordinator);
         runProject = findViewById(R.id.btn_execute);
-        runProject.setText(xB.b().a(this, R.string.common_word_run));
+        runProject.setText(Helper.getResString(R.string.common_word_run));
         runProject.setOnClickListener(this);
         findViewById(R.id.btn_compiler_opt).setOnClickListener(this);
         xmlLayoutOrientation = findViewById(R.id.img_orientation);
@@ -590,10 +586,10 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
      */
     private void showSaveBeforeQuittingDialog() {
         aB dialog = new aB(this);
-        dialog.b(xB.b().a(getApplicationContext(), R.string.design_quit_title_exit_projet));
+        dialog.b(Helper.getResString(R.string.design_quit_title_exit_projet));
         dialog.a(R.drawable.exit_96);
-        dialog.a(xB.b().a(getApplicationContext(), R.string.design_quit_message_confirm_save));
-        dialog.b(xB.b().a(getApplicationContext(), R.string.design_quit_button_save_and_exit), v -> {
+        dialog.a(Helper.getResString(R.string.design_quit_message_confirm_save));
+        dialog.b(Helper.getResString(R.string.design_quit_button_save_and_exit), v -> {
             if (!mB.a()) {
                 dialog.dismiss();
                 try {
@@ -605,7 +601,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                 }
             }
         });
-        dialog.a(xB.b().a(getApplicationContext(), R.string.common_word_exit), v -> {
+        dialog.a(Helper.getResString(R.string.common_word_exit), v -> {
             if (!mB.a()) {
                 dialog.dismiss();
                 try {
@@ -617,7 +613,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                 }
             }
         });
-        dialog.configureDefaultButton(xB.b().a(getApplicationContext(), R.string.common_word_cancel),
+        dialog.configureDefaultButton(Helper.getResString(R.string.common_word_cancel),
                 Helper.getDialogDismissListener(dialog));
         dialog.show();
     }
@@ -627,10 +623,10 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
      */
     private void warnAboutInsufficientStorageSpace() {
         aB dialog = new aB(this);
-        dialog.b(xB.b().a(getApplicationContext(), R.string.common_word_warning));
+        dialog.b(Helper.getResString(R.string.common_word_warning));
         dialog.a(R.drawable.break_warning_96_red);
-        dialog.a(xB.b().a(getApplicationContext(), R.string.common_message_insufficient_storage_space));
-        dialog.b(xB.b().a(getApplicationContext(), R.string.common_word_ok),
+        dialog.a(Helper.getResString(R.string.common_message_insufficient_storage_space));
+        dialog.b(Helper.getResString(R.string.common_word_ok),
                 Helper.getDialogDismissListener(dialog));
         dialog.show();
     }
@@ -639,9 +635,9 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
         B = true;
         aB dialog = new aB(this);
         dialog.a(R.drawable.data_backup_96);
-        dialog.b(xB.b().a(getApplicationContext(), R.string.design_restore_data_title));
-        dialog.a(xB.b().a(getApplicationContext(), R.string.design_restore_data_message_confirm));
-        dialog.b(xB.b().a(getApplicationContext(), R.string.common_word_restore), v -> {
+        dialog.b(Helper.getResString(R.string.design_restore_data_title));
+        dialog.a(Helper.getResString(R.string.design_restore_data_message_confirm));
+        dialog.b(Helper.getResString(R.string.common_word_restore), v -> {
             if (!mB.a()) {
                 boolean g = jC.c(sc_id).g();
                 boolean g2 = jC.b(sc_id).g();
@@ -680,7 +676,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                 dialog.dismiss();
             }
         });
-        dialog.a(xB.b().a(getApplicationContext(), R.string.common_word_no), v -> {
+        dialog.a(Helper.getResString(R.string.common_word_no), v -> {
             B = false;
             dialog.dismiss();
         });
@@ -703,6 +699,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                     .setPositiveButton("Dismiss", null);
 
             runOnUiThread(() -> {
+                if (isFinishing()) return;
                 progress.dismiss();
 
                 CodeEditor editor = new CodeEditor(DesignActivity.this);
@@ -777,7 +774,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
      */
     void toJavaManager() {
         launchActivity(ManageJavaActivity.class, null,
-                new Pair<>("pkgName", q.e));
+                new Pair<>("pkgName", q.packageName));
     }
 
     /**
@@ -914,9 +911,8 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
          */
         @Override
         public void a() {
-            q.b();
             dismiss();
-            runProject.setText(xB.b().a(getApplicationContext(), R.string.common_word_run));
+            runProject.setText(Helper.getResString(R.string.common_word_run));
             runProject.setClickable(true);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
@@ -930,10 +926,9 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
         @Override
         public void a(String str) {
             runOnUiThread(() -> {
-                q.b();
                 dismiss();
                 SketchwareUtil.toastError("APK build failed");
-                runProject.setText(xB.b().a(getApplicationContext(), R.string.common_word_run));
+                runProject.setText(Helper.getResString(R.string.common_word_run));
                 runProject.setClickable(true);
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             });
@@ -951,9 +946,8 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
             } else {
                 try {
                     publishProgress("Deleting temporary files...");
-                    FileUtil.deleteFile(q.c);
+                    FileUtil.deleteFile(q.projectMyscPath);
 
-                    q.c();
                     q.c(a);
                     q.a();
                     /* Extract project type template */
@@ -965,33 +959,32 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                     }
 
                     kC kC = jC.d(sc_id);
-                    kC.b(q.w + File.separator + "drawable-xhdpi");
+                    kC.b(q.resDirectoryPath + File.separator + "drawable-xhdpi");
                     kC = jC.d(sc_id);
-                    kC.c(q.w + File.separator + "raw");
+                    kC.c(q.resDirectoryPath + File.separator + "raw");
                     kC = jC.d(sc_id);
-                    kC.a(q.A + File.separator + "fonts");
+                    kC.a(q.assetsPath + File.separator + "fonts");
                     generateProjectDebugFiles();
                     q.f();
                     q.e();
 
                     Dp mDp = new Dp(this, a, q);
 
-                    publishProgress("Extracting AAPT/AAPT2 binaries...");
-                    mDp.i();
+                    mDp.maybeExtractAapt2();
                     if (canceled) {
                         cancel(true);
                         return;
                     }
 
                     publishProgress("Extracting built-in libraries...");
-                    mDp.j();
+                    mDp.getBuiltInLibrariesReady();
                     if (canceled) {
                         cancel(true);
                         return;
                     }
 
                     publishProgress("AAPT2 is running...");
-                    mDp.a();
+                    mDp.compileResources();
                     if (canceled) {
                         cancel(true);
                         return;
@@ -1004,15 +997,14 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                     }
 
                     publishProgress("Java is compiling...");
-                    /* Compile Java classes */
-                    mDp.f();
+                    mDp.compileJavaCode();
                     if (canceled) {
                         cancel(true);
                         return;
                     }
 
                     /* Encrypt Strings in classes if enabled */
-                    StringfogHandler stringfogHandler = new StringfogHandler(q.b);
+                    StringfogHandler stringfogHandler = new StringfogHandler(q.sc_id);
                     stringfogHandler.start(this, mDp);
                     if (canceled) {
                         cancel(true);
@@ -1020,43 +1012,36 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
                     }
 
                     /* Obfuscate classes if enabled */
-                    ProguardHandler proguardHandler = new ProguardHandler(q.b);
+                    ProguardHandler proguardHandler = new ProguardHandler(q.sc_id);
                     proguardHandler.start(this, mDp);
                     if (canceled) {
                         cancel(true);
                         return;
                     }
 
-                    /* Create DEX file(s) */
                     publishProgress(mDp.getDxRunningText());
-                    mDp.c();
+                    mDp.createDexFilesFromClasses();
                     if (canceled) {
                         cancel(true);
                         return;
                     }
 
-                    /* Merge DEX file(s) with libraries' dexes */
-                    publishProgress("Merging libraries' DEX files...");
-                    mDp.h();
+                    publishProgress("Merging DEX files...");
+                    mDp.getDexFilesReady();
                     if (canceled) {
                         cancel(true);
                         return;
                     }
 
                     publishProgress("Building APK...");
-                    mDp.g();
+                    mDp.buildApk();
                     if (canceled) {
                         cancel(true);
                         return;
                     }
 
                     publishProgress("Signing APK...");
-                    if (Build.VERSION.SDK_INT >= 26) {
-                        ApkSigner signer = new ApkSigner();
-                        signer.signWithTestKey(mDp.yq.G, mDp.yq.H, null);
-                    } else {
-                        mDp.k();
-                    }
+                    mDp.signDebugApk();
                     if (canceled) {
                         cancel(true);
                         return;
@@ -1139,11 +1124,10 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
         public void onCancelled() {
             super.onCancelled();
             runOnUiThread(() -> {
-                runProject.setText(xB.b().a(getApplicationContext(), R.string.common_word_run));
+                runProject.setText(Helper.getResString(R.string.common_word_run));
                 runProject.setClickable(true);
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             });
-            q.b();
             dismiss();
         }
 
@@ -1233,6 +1217,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
             finish();
         }
 
+        @Override
         public void b() {
             publishProgress("Now processing..");
             jC.d(sc_id).v();
@@ -1258,7 +1243,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
 
         @Override
         public void a() {
-            bB.a(a, xB.b().a(a, R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
+            bB.a(a, Helper.getResString(R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
             saveVersionCodeInformationToProject();
             h();
             jC.d(sc_id).f();
@@ -1268,7 +1253,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
 
         @Override
         public void a(String str) {
-            bB.b(a, xB.b().a(a, R.string.common_error_failed_to_save), bB.TOAST_NORMAL).show();
+            bB.b(a, Helper.getResString(R.string.common_error_failed_to_save), bB.TOAST_NORMAL).show();
             DesignActivity.this.h();
         }
 
@@ -1300,7 +1285,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
 
         @Override
         public void a() {
-            bB.a(a, xB.b().a(a, R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
+            bB.a(a, Helper.getResString(R.string.common_message_complete_save), bB.TOAST_NORMAL).show();
             saveVersionCodeInformationToProject();
             h();
             finish();
@@ -1308,7 +1293,7 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
 
         @Override
         public void a(String str) {
-            bB.b(a, xB.b().a(a, R.string.common_error_failed_to_save), bB.TOAST_NORMAL).show();
+            bB.b(a, Helper.getResString(R.string.common_error_failed_to_save), bB.TOAST_NORMAL).show();
             h();
         }
 
@@ -1367,9 +1352,9 @@ public class DesignActivity extends BaseAppCompatActivity implements OnClickList
         public ViewPagerAdapter(Xf xf, Context context) {
             super(xf);
             labels = new String[]{
-                    xB.b().a(context, R.string.design_tab_title_view),
-                    xB.b().a(context, R.string.design_tab_title_event),
-                    xB.b().a(context, R.string.design_tab_title_component)};
+                    Helper.getResString(R.string.design_tab_title_view),
+                    Helper.getResString(R.string.design_tab_title_event),
+                    Helper.getResString(R.string.design_tab_title_component)};
         }
 
         @Override

@@ -12,16 +12,18 @@ import com.sketchware.remod.R;
 import a.a.a.GB;
 import a.a.a.rB;
 import a.a.a.xB;
+import mod.hey.studios.util.Helper;
 
 public class CollectErrorActivity extends Activity {
 
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Intent intent = getIntent();
         if (intent != null) {
             String error = intent.getStringExtra("error");
             new AlertDialog.Builder(this)
-                    .setTitle(xB.b().a(getApplicationContext(), R.string.common_error_an_error_occurred))
+                    .setTitle(Helper.getResString(R.string.common_error_an_error_occurred))
                     .setMessage("An error occurred while running application.\nDo you want to send this error log?")
                     .setPositiveButton("send", (dialog, which) -> new a().execute(("SKETCHWARE ver=" + GB.d(getApplicationContext())
                             + "\nLocale=" + GB.g(getApplicationContext())
@@ -43,11 +45,13 @@ public class CollectErrorActivity extends Activity {
 
     class a extends AsyncTask<String, String, String> {
 
+        @Override
         public String doInBackground(String... strArr) {
             new rB().a(strArr[0]);
             return null;
         }
 
+        @Override
         public void onPostExecute(String str) {
             super.onPostExecute(str);
             finish();

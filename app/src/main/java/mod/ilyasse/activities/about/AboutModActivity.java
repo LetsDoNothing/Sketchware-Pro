@@ -270,6 +270,7 @@ public class AboutModActivity extends AppCompatActivity {
 
             // ViewPager$OnPageChangeListener.onPageScrollStateChanged(int) got obfuscated to
             // ViewPager$e.a(int)
+            @Override
             public void a(int state) {
             }
         });
@@ -664,8 +665,11 @@ public class AboutModActivity extends AppCompatActivity {
                 // RecyclerView$a<VH extends RecyclerView.v>.c(int)
                 c(position);
             });
-
-            advancedCorners(leftLine, "#008dcd");
+            if (0 == position) {
+                advancedCorners(leftLine, "#008dcd");
+            } else {
+                leftLine.setBackground(null);
+            }
         }
 
         // RecyclerView$Adapter<T extends RecyclerView.ViewHolder>.getItemCount() got obfuscated

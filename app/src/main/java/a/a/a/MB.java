@@ -3,12 +3,14 @@ package a.a.a;
 import android.content.Context;
 import android.text.Editable;
 import android.text.InputFilter;
+import android.text.Spanned;
 import android.text.TextWatcher;
 import android.widget.EditText;
 
 import com.google.android.material.textfield.TextInputLayout;
 
 public abstract class MB implements TextWatcher, InputFilter {
+
     public Context a;
     public TextInputLayout b;
     public EditText c;
@@ -16,35 +18,44 @@ public abstract class MB implements TextWatcher, InputFilter {
     public int e;
 
     public MB(Context context, TextInputLayout textInputLayout) {
-        this.a = context;
-        this.b = textInputLayout;
-        this.c = textInputLayout.getEditText();
-        this.c.setFilters(new InputFilter[]{this});
-        this.c.addTextChangedListener(this);
+        a = context;
+        b = textInputLayout;
+        c = textInputLayout.getEditText();
+        c.setFilters(new InputFilter[]{this});
+        c.addTextChangedListener(this);
     }
 
     public String a() {
-        return this.c.getText().toString();
+        return c.getText().toString();
     }
 
     public void a(String str) {
-        this.d = true;
-        this.c.setText(str);
+        d = true;
+        c.setText(str);
     }
 
+    @Override
+    public CharSequence filter(CharSequence charSequence, int i, int i1, Spanned spanned, int i2, int i3) {
+        return null;
+    }
+
+    @Override
+    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+    }
+
+    @Override
     public void afterTextChanged(Editable editable) {
         if (editable.toString().isEmpty()) {
-            this.b.setErrorEnabled(false);
+            b.setErrorEnabled(false);
         }
     }
 
     public boolean b() {
-        if (!this.d) {
-            this.c.requestFocus();
-        }
-        return this.d;
+        if (!d) c.requestFocus();
+        return d;
     }
 
+    @Override
     public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
     }
 }

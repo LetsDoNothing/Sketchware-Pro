@@ -9,6 +9,8 @@ import com.airbnb.lottie.LottieAnimationView;
 import com.besome.sketch.tools.QuizBoard;
 import com.sketchware.remod.R;
 
+import mod.hey.studios.util.Helper;
+
 public class Ep extends Dialog {
 
     private final TextView tvProgress;
@@ -19,13 +21,13 @@ public class Ep extends Dialog {
         super(context, R.style.progress);
         requestWindowFeature(1);
         setContentView(R.layout.build_progress_msg_box);
-        LinearLayout quizLayout = (LinearLayout) findViewById(R.id.layout_quiz);
+        LinearLayout quizLayout = findViewById(R.id.layout_quiz);
         quizBoard = new QuizBoard(getContext());
         quizLayout.addView(quizBoard);
         ((LottieAnimationView) findViewById(R.id.animation_view)).setScale(2.0F);
-        setTitle(xB.b().a(context, R.string.common_message_progress));
-        tvProgress = (TextView) findViewById(R.id.tv_progress);
-        tvProgress.setText(xB.b().a(context, R.string.common_message_loading));
+        setTitle(Helper.getResString(R.string.common_message_progress));
+        tvProgress = findViewById(R.id.tv_progress);
+        tvProgress.setText(Helper.getResString(R.string.common_message_loading));
         super.setCanceledOnTouchOutside(false);
         super.setCancelable(true);
     }

@@ -1,6 +1,5 @@
 package a.a.a;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -17,7 +16,8 @@ import com.sketchware.remod.R;
 
 import java.util.ArrayList;
 
-@SuppressLint("ResourceType")
+import mod.hey.studios.util.Helper;
+
 public class Nu extends LinearLayout implements Uu, OnClickListener {
     public String a = "";
     public String b = "";
@@ -47,16 +47,16 @@ public class Nu extends LinearLayout implements Uu, OnClickListener {
 
     private void setAdUnit(int position) {
         aB dialog = new aB((Activity) getContext());
-        View rootView = wB.a(getContext(), 2131427643);
-        ViewGroup viewGroup = rootView.findViewById(2131231668);
-        dialog.b(xB.b().a(getContext(), 2131625175));
+        View rootView = wB.a(getContext(), R.layout.property_popup_selector_single);
+        ViewGroup viewGroup = rootView.findViewById(R.id.rg_content);
+        dialog.b(Helper.getResString(R.string.design_library_admob_dialog_select_unit_title));
 
         for (String adUnit : c) {
             viewGroup.addView(addRadioButton(adUnit));
         }
 
         dialog.a(rootView);
-        dialog.b(xB.b().a(getContext(), 2131625035), view -> {
+        dialog.b(Helper.getResString(R.string.common_word_select), view -> {
             for (int i = 0; i < viewGroup.getChildCount(); i++) {
                 RadioButton radioButton = (RadioButton) viewGroup.getChildAt(i);
                 if (radioButton.isChecked()) {
@@ -72,35 +72,39 @@ public class Nu extends LinearLayout implements Uu, OnClickListener {
             }
             dialog.dismiss();
         });
-        dialog.a(xB.b().a(getContext(), 2131624974), view -> dialog.dismiss());
+        dialog.a(Helper.getResString(R.string.common_word_cancel), view -> dialog.dismiss());
         dialog.show();
     }
 
     private void initialize(Context var1) {
-        wB.a(var1, this, 2131427535);
+        wB.a(var1, this, R.layout.manage_library_admob_set_unit);
         gB.b(this, 600, 200, null);
-        d = findViewById(2131231889);
-        e = findViewById(2131231887);
-        f = findViewById(2131232014);
-        g = findViewById(2131232012);
+        d = findViewById(R.id.tv_banner_name);
+        e = findViewById(R.id.tv_banner_id);
+        f = findViewById(R.id.tv_inter_name);
+        g = findViewById(R.id.tv_inter_id);
         tvRewardName = findViewById(R.id.tv_reward_name);
         tvRewardNameTitle = findViewById(R.id.tv_reward_name_title);
-        ((TextView) findViewById(2131231891)).setText(xB.b().a(getContext(), 2131625196));
-        ((TextView) findViewById(2131231890)).setText(xB.b().a(getContext(), 2131625192) + " : ");
-        ((TextView) findViewById(2131231888)).setText(xB.b().a(getContext(), 2131625193) + " : ");
-        ((TextView) findViewById(2131232016)).setText(xB.b().a(getContext(), 2131625197));
-        ((TextView) findViewById(2131232015)).setText(xB.b().a(getContext(), 2131625192) + " : ");
-        ((TextView) findViewById(2131232013)).setText(xB.b().a(getContext(), 2131625193) + " : ");
-        findViewById(2131231179).setOnClickListener(this);
-        findViewById(2131231180).setOnClickListener(this);
-        findViewById(2131231886).setOnClickListener(this);
-        findViewById(2131232011).setOnClickListener(this);
+        ((TextView) findViewById(R.id.tv_banner_title)).setText(Helper.getResString(R.string.design_library_admob_title_banner));
+        ((TextView) findViewById(R.id.tv_banner_name_title)).setText(Helper.getResString(R.string.design_library_admob_title_ad_name) + " : ");
+        ((TextView) findViewById(R.id.tv_banner_id_title)).setText(Helper.getResString(R.string.design_library_admob_title_ad_unit_id) + " : ");
+        ((TextView) findViewById(R.id.tv_inter_title)).setText(Helper.getResString(R.string.design_library_admob_title_interstitial));
+        ((TextView) findViewById(R.id.tv_inter_name_title)).setText(Helper.getResString(R.string.design_library_admob_title_ad_name) + " : ");
+        ((TextView) findViewById(R.id.tv_inter_id_title)).setText(Helper.getResString(R.string.design_library_admob_title_ad_unit_id) + " : ");
+
+        findViewById(R.id.img_select_banner).setOnClickListener(this);
+        findViewById(R.id.img_select_inter).setOnClickListener(this);
+        findViewById(R.id.img_select_reward).setOnClickListener(this);
+        findViewById(R.id.tv_banner_edit).setOnClickListener(this);
+        findViewById(R.id.tv_inter_edit).setOnClickListener(this);
+        findViewById(R.id.tv_reward_edit).setOnClickListener(this);
     }
 
     @Override
     public void a(ProjectLibraryBean projectLibraryBean) {
         projectLibraryBean.reserved1 = a;
         projectLibraryBean.reserved2 = b;
+        projectLibraryBean.reserved3 = rewardAdUnit;
     }
 
     private void setRewardAdUnit(String adUnit) {
@@ -109,7 +113,7 @@ public class Nu extends LinearLayout implements Uu, OnClickListener {
             if (adUnit.contains(" : ")) {
                 int indexOfColon = adUnit.indexOf(" : ");
                 tvRewardNameTitle.setText(adUnit.substring(0, indexOfColon));
-                tvRewardName.setText(indexOfColon + 3);
+                tvRewardName.setText(adUnit.substring(indexOfColon + 3));
             } else {
                 tvRewardNameTitle.setText("");
                 tvRewardName.setText(adUnit);
@@ -155,7 +159,7 @@ public class Nu extends LinearLayout implements Uu, OnClickListener {
         if (!a.isEmpty() && !b.isEmpty()) {
             return true;
         } else {
-            bB.a(getContext(), xB.b().a(getContext(), 2131625182), 1).show();
+            bB.a(getContext(), Helper.getResString(R.string.design_library_admob_message_select_ad_unit), 1).show();
             return false;
         }
     }
@@ -163,24 +167,21 @@ public class Nu extends LinearLayout implements Uu, OnClickListener {
     @Override
     public void onClick(View var1) {
         switch (var1.getId()) {
-            case 2131231179:
-            case 2131231886:
+            case R.id.img_select_banner:
+            case R.id.tv_banner_edit:
                 setAdUnit(0);
                 break;
 
-            case 2131231180:
-            case 2131232011:
+            case R.id.img_select_inter:
+            case R.id.tv_inter_edit:
                 setAdUnit(1);
                 break;
 
+            case R.id.img_select_reward:
             case R.id.tv_reward_edit:
                 setAdUnit(2);
+                break;
         }
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
     }
 
     @Override

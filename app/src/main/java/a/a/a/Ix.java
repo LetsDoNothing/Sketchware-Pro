@@ -12,6 +12,7 @@ import android.util.Pair;
 import com.besome.sketch.beans.ProjectFileBean;
 import com.google.gson.Gson;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -33,7 +34,7 @@ public class Ix {
     public FilePathUtil fpu = new FilePathUtil();
     public FileResConfig frc;
     public ProjectSettings settings;
-    private boolean isTargetSdk31 = false;
+    private boolean targetsSdkVersion31OrHigher = false;
     private String packageName;
 
     public Ix(jq jq, ArrayList<ProjectFileBean> projectFileBeans) {
@@ -172,7 +173,7 @@ public class Ix {
         Nx actionTag = new Nx("action");
         actionTag.a("android", "name", receiverName);
         intentFilterTag.a(actionTag);
-        if (isTargetSdk31) {
+        if (targetsSdkVersion31OrHigher) {
             receiverTag.a("android", "exported", "true");
         }
         receiverTag.a(intentFilterTag);
@@ -224,9 +225,9 @@ public class Ix {
     }
 
     public void setYq(yq yqVar) {
-        settings = new ProjectSettings(yqVar.b);
-        isTargetSdk31 = Integer.parseInt(settings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, "28")) >= 31;
-        packageName = yqVar.e;
+        settings = new ProjectSettings(yqVar.sc_id);
+        targetsSdkVersion31OrHigher = Integer.parseInt(settings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, "28")) >= 31;
+        packageName = yqVar.packageName;
     }
 
     /**
@@ -291,8 +292,12 @@ public class Ix {
         applicationTag.a("android", "allowBackup", "true");
         applicationTag.a("android", "icon", "@drawable/app_icon");
         applicationTag.a("android", "label", "@string/app_name");
-        applicationTag.a("android", "name",
-                settings.getValue(ProjectSettings.SETTING_APPLICATION_CLASS, ".SketchApplication"));
+
+        String applicationClassName = settings.getValue(ProjectSettings.SETTING_APPLICATION_CLASS, ".SketchApplication");
+        if (c.isDebugBuild || !applicationClassName.equals(".SketchApplication") ||
+                new File(fpu.getPathJava(c.sc_id), "SketchApplication.java").exists()) {
+            applicationTag.a("android", "name", applicationClassName);
+        }
         if (addRequestLegacyExternalStorage) {
             applicationTag.a("android", "requestLegacyExternalStorage", "true");
         }
@@ -315,7 +320,7 @@ public class Ix {
                     activityTag.a("android", "supportsPictureInPicture", "true");
                 }
                 if (!AndroidManifestInjector.isActivityThemeUsed(activityTag, c.sc_id, projectFileBean.getJavaName())) {
-                    if (c.isAppCompatUsed) {
+                    if (c.g) {
                         if (projectFileBean.hasActivityOption(ProjectFileBean.OPTION_ACTIVITY_FULLSCREEN)) {
                             activityTag.a("android", "theme", "@style/AppTheme.FullScreen");
                         }
@@ -337,12 +342,6 @@ public class Ix {
                         activityTag.a("android", "screenOrientation", "landscape");
                     }
                 }
-                if (c.isDynamicLinkUsed) {
-                    if (isTargetSdk31) {
-                        activityTag.a("android", "exported", "false");
-                    }
-                    writeDLIntentFilter(activityTag);
-                }
                 if (!AndroidManifestInjector.isActivityKeyboardUsed(activityTag, c.sc_id, projectFileBean.getJavaName())) {
                     String keyboardSetting = vq.a(projectFileBean.keyboardSetting);
                     if (keyboardSetting.length() > 0) {
@@ -357,10 +356,15 @@ public class Ix {
                     Nx categoryTag = new Nx("category");
                     categoryTag.a("android", "name", Intent.CATEGORY_LAUNCHER);
                     intentFilterTag.a(categoryTag);
-                    if (isTargetSdk31) {
+                    if (targetsSdkVersion31OrHigher && !AndroidManifestInjector.isActivityExportedUsed(c.sc_id, javaName)) {
                         activityTag.a("android", "exported", "true");
                     }
                     activityTag.a(intentFilterTag);
+                } else if (c.isDynamicLinkUsed) {
+                    if (targetsSdkVersion31OrHigher && !AndroidManifestInjector.isActivityExportedUsed(c.sc_id, javaName)) {
+                        activityTag.a("android", "exported", "false");
+                    }
+                    writeDLIntentFilter(activityTag);
                 }
                 applicationTag.a(activityTag);
             }

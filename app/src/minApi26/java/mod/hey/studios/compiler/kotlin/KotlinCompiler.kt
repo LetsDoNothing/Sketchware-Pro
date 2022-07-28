@@ -36,12 +36,12 @@ class KotlinCompiler(
 
         val mKotlinHome = File(KotlinCompilerBridge.getKotlinHome(workspace)).apply { mkdirs() }
         // Output in the same place as ecj, makes everything easier
-        val mClassOutput = File(workspace.u).apply { mkdirs() }
+        val mClassOutput = File(workspace.compiledClassesPath).apply { mkdirs() }
 
         val arguments = mutableListOf<String>().apply {
             // Classpath
             add("-cp")
-            add(builder.d())
+            add(builder.getClasspath())
 
             // Sources (.java & .kt)
             addAll(filesToCompile.map { it.absolutePath })

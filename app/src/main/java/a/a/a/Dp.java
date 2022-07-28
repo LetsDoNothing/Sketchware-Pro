@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.StrictMode;
 import android.text.TextUtils;
 import android.text.format.Formatter;
@@ -34,6 +35,7 @@ import java.lang.reflect.Method;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -54,6 +56,7 @@ import mod.agus.jcoderz.editor.library.ExtLibSelected;
 import mod.agus.jcoderz.editor.manage.library.locallibrary.ManageLocalLibrary;
 import mod.agus.jcoderz.lib.FilePathUtil;
 import mod.agus.jcoderz.lib.FileUtil;
+import mod.alucard.tn.apksigner.ApkSigner;
 import mod.hey.studios.build.BuildSettings;
 import mod.hey.studios.compiler.kotlin.KotlinCompilerBridge;
 import mod.hey.studios.project.ProjectSettings;
@@ -89,7 +92,7 @@ public class Dp {
     public ProguardHandler proguard;
     public ProjectSettings settings;
     private boolean buildAppBundle = false;
-    private ArrayList<String> dexesToAddButNotMerge = new ArrayList<>();
+    private ArrayList<File> dexesToAddButNotMerge = new ArrayList<>();
 
     /**
      * Timestamp keeping track of when compiling the project's resources started, needed for stats of how long compiling took.
@@ -120,18 +123,18 @@ public class Dp {
         }
 
         aapt2Binary = new File(context.getCacheDir(), "aapt2");
-        build_settings = new BuildSettings(yqVar.b);
+        build_settings = new BuildSettings(yqVar.sc_id);
         this.context = context;
         yq = yqVar;
         fpu = new FilePathUtil();
         fileUtil = new oB(false);
         commandExecutor = new Fp();
-        mll = new ManageLocalLibrary(yqVar.b);
+        mll = new ManageLocalLibrary(yqVar.sc_id);
         builtInLibraryManager = new Kp();
         File defaultAndroidJar = new File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar");
         androidJarPath = build_settings.getValue(BuildSettings.SETTING_ANDROID_JAR_PATH, defaultAndroidJar.getAbsolutePath());
-        proguard = new ProguardHandler(yqVar.b);
-        settings = new ProjectSettings(yqVar.b);
+        proguard = new ProguardHandler(yqVar.sc_id);
+        settings = new ProjectSettings(yqVar.sc_id);
     }
 
     public Dp(BuildAsyncTask buildAsyncTask, Context context, yq yqVar) {
@@ -149,19 +152,15 @@ public class Dp {
      *
      * @throws Exception Thrown when anything goes wrong while compiling resources
      */
-    public void a() throws Exception {
+    public void compileResources() throws Exception {
         timestampResourceCompilationStarted = System.currentTimeMillis();
-        b();
+        ResourceCompiler compiler = new ResourceCompiler(
+                this,
+                aapt2Binary,
+                buildAppBundle,
+                buildingDialog);
+        compiler.compile();
         LogUtil.d(TAG, "Compiling resources took " + (System.currentTimeMillis() - timestampResourceCompilationStarted) + " ms");
-    }
-
-    public void a(iI iIVar, String str) {
-        ZipSigner signer = iIVar.b(new CB().a(str));
-        try {
-            signer.signZip(yq.G, yq.I);
-        } catch (IOException | GeneralSecurityException e) {
-            LogUtil.e(TAG, "Failed to sign APK: " + e.getMessage(), e);
-        }
     }
 
     /**
@@ -174,7 +173,7 @@ public class Dp {
      * @param targetFile   The file on local storage
      * @return If the file in assets has been extracted
      */
-    public final boolean a(String fileInAssets, String targetFile) {
+    private boolean hasFileChanged(String fileInAssets, String targetFile) {
         long length;
         File compareToFile = new File(targetFile);
         long lengthOfFileInAssets = fileUtil.a(context, fileInAssets);
@@ -194,20 +193,6 @@ public class Dp {
         return true;
     }
 
-    /**
-     * Compile the project's resources, with AAPT2 automatically.
-     *
-     * @throws Exception Thrown in case AAPT2 has an error while compiling resources.
-     */
-    public void b() throws Exception {
-        ResourceCompiler compiler = new ResourceCompiler(
-                this,
-                aapt2Binary,
-                buildAppBundle,
-                buildingDialog);
-        compiler.compile();
-    }
-
     public boolean isD8Enabled() {
         return build_settings.getValue(
                 BuildSettings.SETTING_DEXER,
@@ -222,10 +207,10 @@ public class Dp {
     /**
      * Compile Java classes into DEX file(s)
      *
-     * @throws Exception Thrown if the compiler has any problems compiling
+     * @throws Exception Thrown if the compiler had any problems compiling
      */
-    public void c() throws Exception {
-        FileUtil.makeDir(yq.t + File.separator + "dex");
+    public void createDexFilesFromClasses() throws Exception {
+        FileUtil.makeDir(yq.binDirectoryPath + File.separator + "dex");
         if (isD8Enabled()) {
             long savedTimeMillis = System.currentTimeMillis();
             try {
@@ -241,8 +226,8 @@ public class Dp {
                     "--debug",
                     "--verbose",
                     "--multi-dex",
-                    "--output=" + yq.t + File.separator + "dex",
-                    proguard.isProguardEnabled() ? yq.classes_proguard : yq.u
+                    "--output=" + yq.binDirectoryPath + File.separator + "dex",
+                    proguard.isProguardEnabled() ? yq.classesProGuardPath : yq.compiledClassesPath
             );
 
             try {
@@ -263,10 +248,7 @@ public class Dp {
         }
     }
 
-    /**
-     * @return Classpath for regular building of the project
-     */
-    public final String d() {
+    public String getClasspath() {
         StringBuilder classpath = new StringBuilder();
 
         /*
@@ -289,10 +271,13 @@ public class Dp {
             classpath.append(":").append(BuiltInLibraries.getLibraryClassesJarPathString(BuiltInLibraries.ANDROIDX_MULTIDEX));
         }
 
-        /* Add lambda helper classes */
-        if (build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION,
+        /*
+         * Add lambda helper classes
+         * Since all versions above java 7 supports lambdas, this should work
+         */
+        if (!build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION,
                         BuildSettings.SETTING_JAVA_VERSION_1_7)
-                .equals(BuildSettings.SETTING_JAVA_VERSION_1_8)) {
+                .equals(BuildSettings.SETTING_JAVA_VERSION_1_7)) {
             classpath.append(":").append(new File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "core-lambda-stubs.jar").getAbsolutePath());
         }
 
@@ -310,7 +295,7 @@ public class Dp {
         }
 
         /* Add JARs from project's classpath */
-        String path = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + (yq.b) + "/files/classpath/";
+        String path = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + yq.sc_id + "/files/classpath/";
         ArrayList<String> jars = FileUtil.listFiles(path, "jar");
         classpath.append(":").append(TextUtils.join(":", jars));
 
@@ -318,55 +303,59 @@ public class Dp {
     }
 
     /**
-     * @return Similar to {@link Dp#d()}, but doesn't return some local libraries' JARs if ProGuard full mode is enabled
+     * @return Similar to {@link Dp#getClasspath()}, but doesn't return some local libraries' JARs if ProGuard full mode is enabled
      */
-    public final String classpath() {
-        StringBuilder baseClasses = new StringBuilder(androidJarPath);
-        if (!build_settings.getValue(BuildSettings.SETTING_NO_HTTP_LEGACY, BuildSettings.SETTING_GENERIC_VALUE_FALSE)
-                .equals(BuildSettings.SETTING_GENERIC_VALUE_TRUE)) {
-            baseClasses.append(":").append(BuiltInLibraries.getLibraryClassesJarPathString(BuiltInLibraries.HTTP_LEGACY_ANDROID_28));
-        }
+    public String getProGuardClasspath() {
+        Collection<String> localLibraryJarsWithFullModeOff = new LinkedList<>();
 
-        StringBuilder builtInLibrariesClasses = new StringBuilder();
-        for (Jp builtInLibrary : builtInLibraryManager.a()) {
-            builtInLibrariesClasses.append(":").append(BuiltInLibraries.getLibraryClassesJarPathString(builtInLibrary.a()));
-        }
+        for (HashMap<String, Object> localLibrary : mll.list) {
+            Object nameObject = localLibrary.get("name");
+            Object jarPathObject = localLibrary.get("jarPath");
 
-        StringBuilder localLibraryClasses = new StringBuilder();
-        for (HashMap<String, Object> hashMap : mll.list) {
-            Object nameObject = hashMap.get("name");
-            Object jarPathObject = hashMap.get("jarPath");
             if (nameObject instanceof String && jarPathObject instanceof String) {
                 String name = (String) nameObject;
                 String jarPath = (String) jarPathObject;
-                if (hashMap.containsKey("jarPath") && !proguard.libIsProguardFMEnabled(name)) {
-                    localLibraryClasses.append(":").append(jarPath);
+
+                if (localLibrary.containsKey("jarPath") && !proguard.libIsProguardFMEnabled(name)) {
+                    localLibraryJarsWithFullModeOff.add(jarPath);
                 }
             }
         }
 
-        String customClasspath = build_settings.getValue(BuildSettings.SETTING_CLASSPATH, "");
-        if (!TextUtils.isEmpty(customClasspath)) {
-            localLibraryClasses.append(":").append(customClasspath);
+        String normalClasspath = getClasspath();
+        StringBuilder classpath = new StringBuilder();
+        normalClasspathLoop:
+        for (String classpathPart : normalClasspath.split(":")) {
+            for (String jarPathToExclude : localLibraryJarsWithFullModeOff) {
+                if (classpathPart.equals(jarPathToExclude)) {
+                    localLibraryJarsWithFullModeOff.remove(jarPathToExclude);
+                    continue normalClasspathLoop;
+                }
+            }
+
+            if (!classpathPart.equals(yq.compiledClassesPath)) {
+                classpath.append(classpathPart).append(':');
+            }
         }
 
-        return baseClasses.toString()
-                + builtInLibrariesClasses
-                + localLibraryClasses;
+        // remove trailing delimiter
+        classpath.deleteCharAt(classpath.length() - 1);
+
+        return classpath.toString();
     }
 
     /**
      * Dexes libraries.
      *
-     * @param outputPath The output path, needs to be a folder in case merging DEX files results in multiple
-     * @param dexes      The paths of DEX files to merge
+     * @return List of result DEX files which were merged or couldn't be merged with others.
      * @throws Exception Thrown if merging had problems
      */
-    private void dexLibraries(String outputPath, ArrayList<String> dexes) throws Exception {
+    private Collection<File> dexLibraries(File outputDirectory, List<File> dexes) throws Exception {
         int lastDexNumber = 1;
         String nextMergedDexFilename;
+        Collection<File> resultDexFiles = new LinkedList<>();
         LinkedList<Dex> dexObjects = new LinkedList<>();
-        Iterator<String> toMergeIterator = dexes.iterator();
+        Iterator<File> toMergeIterator = dexes.iterator();
 
         List<FieldId> mergedDexFields;
         List<MethodId> mergedDexMethods;
@@ -384,11 +373,11 @@ public class Dp {
         }
 
         while (toMergeIterator.hasNext()) {
-            String dexPath = toMergeIterator.next();
+            File dexFile = toMergeIterator.next();
             nextMergedDexFilename = lastDexNumber == 1 ? "classes.dex" : "classes" + lastDexNumber + ".dex";
 
             // Closable gets closed automatically
-            Dex dex = new Dex(new FileInputStream(dexPath));
+            Dex dex = new Dex(new FileInputStream(dexFile));
 
             boolean canMerge = true;
             List<FieldId> newDexFieldIds = new LinkedList<>();
@@ -456,14 +445,16 @@ public class Dp {
             }
 
             if (canMerge) {
-                LogUtil.d(TAG, "Merging DEX #" + dexes.indexOf(dexPath) + " as well to " + nextMergedDexFilename);
+                LogUtil.d(TAG, "Merging DEX #" + dexes.indexOf(dexFile) + " as well to " + nextMergedDexFilename);
                 dexObjects.add(dex);
                 mergedDexFields.addAll(newDexFieldIds);
                 mergedDexMethods.addAll(newDexMethodIds);
                 mergedDexProtos.addAll(newDexProtoIds);
                 mergedDexTypes.addAll(newDexTypeIds);
             } else {
-                mergeDexes(outputPath.replace("classes.dex", nextMergedDexFilename), dexObjects);
+                File target = new File(outputDirectory, nextMergedDexFilename);
+                mergeDexes(target, dexObjects);
+                resultDexFiles.add(target);
                 dexObjects.clear();
                 dexObjects.add(dex);
 
@@ -475,15 +466,18 @@ public class Dp {
             }
         }
         if (dexObjects.size() > 0) {
-            String filename = lastDexNumber == 1 ? "classes.dex" : "classes" + lastDexNumber + ".dex";
-            mergeDexes(outputPath.replace("classes.dex", filename), dexObjects);
+            File file = new File(outputDirectory, lastDexNumber == 1 ? "classes.dex" : "classes" + lastDexNumber + ".dex");
+            mergeDexes(file, dexObjects);
+            resultDexFiles.add(file);
         }
+
+        return resultDexFiles;
     }
 
     /**
-     * Get package names of in-use libraries which have resources.
+     * Get package names of in-use libraries which have resources, separated by <code>:</code>.
      */
-    public String e() {
+    public String getLibraryPackageNames() {
         StringBuilder extraPackages = new StringBuilder();
         for (Jp library : builtInLibraryManager.a()) {
             if (library.c()) {
@@ -496,9 +490,9 @@ public class Dp {
     /**
      * Run Eclipse Compiler to compile Java files.
      *
-     * @throws Throwable Thrown when Eclipse has problems compiling
+     * @throws Throwable Thrown when Eclipse had problems compiling
      */
-    public void f() throws Throwable {
+    public void compileJavaCode() throws Throwable {
         long savedTimeMillis = System.currentTimeMillis();
 
         class EclipseOutOutputStream extends OutputStream {
@@ -543,27 +537,27 @@ public class Dp {
                 args.add("-deprecation");
             }
             args.add("-d");
-            args.add(yq.u);
+            args.add(yq.compiledClassesPath);
             args.add("-cp");
-            args.add(d());
+            args.add(getClasspath());
             args.add("-proc:none");
-            args.add(yq.y);
-            args.add(yq.v);
-            String pathJava = fpu.getPathJava(yq.b);
+            args.add(yq.javaFilesPath);
+            args.add(yq.rJavaDirectoryPath);
+            String pathJava = fpu.getPathJava(yq.sc_id);
             if (FileUtil.isExistFile(pathJava)) {
                 args.add(pathJava);
             }
-            String pathBroadcast = fpu.getPathBroadcast(yq.b);
+            String pathBroadcast = fpu.getPathBroadcast(yq.sc_id);
             if (FileUtil.isExistFile(pathBroadcast)) {
                 args.add(pathBroadcast);
             }
-            String pathService = fpu.getPathService(yq.b);
+            String pathService = fpu.getPathService(yq.sc_id);
             if (FileUtil.isExistFile(pathService)) {
                 args.add(pathService);
             }
 
             /* Avoid "package ;" line in that file causing issues while compiling */
-            File rJavaFileWithoutPackage = new File(yq.v, "R.java");
+            File rJavaFileWithoutPackage = new File(yq.rJavaDirectoryPath, "R.java");
             if (rJavaFileWithoutPackage.exists() && !rJavaFileWithoutPackage.delete()) {
                 LogUtil.w(TAG, "Failed to delete file " + rJavaFileWithoutPackage.getAbsolutePath());
             }
@@ -584,13 +578,10 @@ public class Dp {
         }
     }
 
-    /**
-     * Builds an APK, used when clicking "Run" in DesignActivity
-     */
-    public void g() throws By {
-        String firstDexPath = dexesToAddButNotMerge.isEmpty() ? yq.E : dexesToAddButNotMerge.remove(0);
+    public void buildApk() throws By {
+        String firstDexPath = dexesToAddButNotMerge.isEmpty() ? yq.classesDexPath : dexesToAddButNotMerge.remove(0).getAbsolutePath();
         try {
-            ApkBuilder apkBuilder = new ApkBuilder(new File(yq.G), new File(yq.C), new File(firstDexPath), null, null, System.out);
+            ApkBuilder apkBuilder = new ApkBuilder(new File(yq.unsignedUnalignedApkPath), new File(yq.resourcesApkPath), new File(firstDexPath), null, null, System.out);
 
             for (Jp library : builtInLibraryManager.a()) {
                 apkBuilder.addResourcesFromJar(BuiltInLibraries.getLibraryClassesJarPath(library.a()));
@@ -603,7 +594,7 @@ public class Dp {
             }
 
             /* Add project's native libraries */
-            File nativeLibrariesDirectory = new File(fpu.getPathNativelibs(yq.b));
+            File nativeLibrariesDirectory = new File(fpu.getPathNativelibs(yq.sc_id));
             if (nativeLibrariesDirectory.exists()) {
                 apkBuilder.addNativeLibraries(nativeLibrariesDirectory);
             }
@@ -614,7 +605,7 @@ public class Dp {
             }
 
             if (dexesToAddButNotMerge.isEmpty()) {
-                List<String> dexFiles = FileUtil.listFiles(yq.t, "dex");
+                List<String> dexFiles = FileUtil.listFiles(yq.binDirectoryPath, "dex");
                 for (String dexFile : dexFiles) {
                     if (!Uri.fromFile(new File(dexFile)).getLastPathSegment().equals("classes.dex")) {
                         apkBuilder.addFile(new File(dexFile), Uri.parse(dexFile).getLastPathSegment());
@@ -623,9 +614,7 @@ public class Dp {
             } else {
                 int dexNumber = 2;
 
-                for (String dexPath : dexesToAddButNotMerge) {
-                    File dexFile = new File(dexPath);
-
+                for (File dexFile : dexesToAddButNotMerge) {
                     apkBuilder.addFile(dexFile, "classes" + dexNumber + ".dex");
                     dexNumber++;
                 }
@@ -647,46 +636,32 @@ public class Dp {
     }
 
     /**
-     * Currently unused?
-     *
-     * @return Directory/file path with Java classes ready to get transformed to DEX file(s).
-     */
-    public String getJava() {
-        if (proguard.isProguardEnabled()) {
-            ArrayList<String> arrayList = new ArrayList<>();
-            FileUtil.listDir(yq.classes_proguard, arrayList);
-            if (arrayList.size() > 0) {
-                return yq.classes_proguard;
-            }
-        }
-        return yq.u;
-    }
-
-    /**
-     * Merges all DEX files, of used built-in libraries, used Local libraries,and if the project's
-     * minimum SDK version was set to 20 or lower, also the AndroidX MultiDex library.
-     * If adding the HTTP legacy has not been disabled in Build Settings, it gets merged too.
+     * Either merges DEX files to as few as possible, or adds list of DEX files to add to the APK to
+     * {@link #dexesToAddButNotMerge}.
+     * <p>
+     * Will merge DEX files if either the project's minSdkVersion is lower than 21, or if {@link jq#isDebugBuild}
+     * of {@link yq#N} in {@link #yq} is false.
      *
      * @throws Exception Thrown if merging failed
      */
-    public void h() throws Exception {
+    public void getDexFilesReady() throws Exception {
         long savedTimeMillis = System.currentTimeMillis();
-        ArrayList<String> dexes = new ArrayList<>();
+        ArrayList<File> dexes = new ArrayList<>();
 
         /* Add AndroidX MultiDex library if needed */
         if (settings.getMinSdkVersion() < 21) {
-            dexes.add(BuiltInLibraries.getLibraryDexFilePath(BuiltInLibraries.ANDROIDX_MULTIDEX));
+            dexes.add(BuiltInLibraries.getLibraryDexFile(BuiltInLibraries.ANDROIDX_MULTIDEX));
         }
 
         /* Add HTTP legacy files if wanted */
         if (!build_settings.getValue(BuildSettings.SETTING_NO_HTTP_LEGACY, ProjectSettings.SETTING_GENERIC_VALUE_FALSE)
                 .equals(ProjectSettings.SETTING_GENERIC_VALUE_TRUE)) {
-            dexes.add(BuiltInLibraries.getLibraryDexFilePath(BuiltInLibraries.HTTP_LEGACY_ANDROID_28));
+            dexes.add(BuiltInLibraries.getLibraryDexFile(BuiltInLibraries.HTTP_LEGACY_ANDROID_28));
         }
 
         /* Add used built-in libraries' DEX files */
         for (Jp builtInLibrary : builtInLibraryManager.a()) {
-            dexes.add(BuiltInLibraries.getLibraryDexFilePath(builtInLibrary.a()));
+            dexes.add(BuiltInLibraries.getLibraryDexFile(builtInLibrary.a()));
         }
 
         /* Add local libraries' main DEX files */
@@ -700,7 +675,7 @@ public class Dp {
 
                 if (localLibraryDexPath instanceof String) {
                     if (!proguard.libIsProguardFMEnabled((String) localLibraryName)) {
-                        dexes.add((String) localLibraryDexPath);
+                        dexes.add(new File((String) localLibraryDexPath));
                         /* Add library's extra DEX files */
                         File localLibraryDirectory = new File((String) localLibraryDexPath).getParentFile();
 
@@ -713,7 +688,7 @@ public class Dp {
 
                                     if (!filename.equals("classes.dex")
                                             && filename.startsWith("classes") && filename.endsWith(".dex")) {
-                                        dexes.add(localLibraryFile.getAbsolutePath());
+                                        dexes.add(localLibraryFile);
                                     }
                                 }
                             }
@@ -727,17 +702,19 @@ public class Dp {
             }
         }
 
-        dexes.addAll(FileUtil.listFiles(yq.t + File.separator + "dex", "dex"));
+        for (String file : FileUtil.listFiles(yq.binDirectoryPath + File.separator + "dex", "dex")) {
+            dexes.add(new File(file));
+        }
 
         LogUtil.d(TAG, "Will merge these " + dexes.size() + " DEX files to classes.dex: " + dexes);
 
         if (settings.getMinSdkVersion() < 21 || !yq.N.isDebugBuild) {
-            dexLibraries(yq.E, dexes);
+            dexLibraries(new File(yq.binDirectoryPath), dexes);
+            LogUtil.d(TAG, "Merging DEX files took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
         } else {
             dexesToAddButNotMerge = dexes;
+            LogUtil.d(TAG, "Skipped merging DEX files due to debug build with minSdkVersion >= 21");
         }
-
-        LogUtil.d(TAG, "Merging project DEX file(s) and libraries' took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
     }
 
     /**
@@ -745,7 +722,7 @@ public class Dp {
      *
      * @throws By If anything goes wrong while extracting
      */
-    public void i() throws By {
+    public void maybeExtractAapt2() throws By {
         String aapt2PathInAssets = "aapt/";
         if (GB.a().toLowerCase().contains("x86")) {
             aapt2PathInAssets += "aapt2-x86";
@@ -753,8 +730,7 @@ public class Dp {
             aapt2PathInAssets += "aapt2-arm";
         }
         try {
-            /* Check if we need to update AAPT2's binary */
-            if (a(aapt2PathInAssets, aapt2Binary.getAbsolutePath())) {
+            if (hasFileChanged(aapt2PathInAssets, aapt2Binary.getAbsolutePath())) {
                 makeExecutableCommand[2] = aapt2Binary.getAbsolutePath();
                 commandExecutor.a(makeExecutableCommand);
             }
@@ -768,7 +744,7 @@ public class Dp {
      * Checks if we need to extract any library/dependency from assets to filesDir,
      * and extracts them, if needed. Also initializes used built-in libraries.
      */
-    public void j() {
+    public void getBuiltInLibrariesReady() {
         /* If l doesn't exist, create it */
         if (!fileUtil.e(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH.getAbsolutePath())) {
             fileUtil.f(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH.getAbsolutePath());
@@ -788,9 +764,8 @@ public class Dp {
         String libsDirectoryPath = BuiltInLibraries.EXTRACTED_BUILT_IN_LIBRARIES_PATH.getAbsolutePath();
         String testkeyDirectoryPath = new File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "testkey").getAbsolutePath();
 
-        /* If necessary, update android.jar.zip */
         String baseAssetsPath = "libs" + File.separator;
-        if (a(baseAssetsPath + androidJarArchiveName, androidJarPath)) {
+        if (hasFileChanged(baseAssetsPath + androidJarArchiveName, androidJarPath)) {
             if (buildingDialog != null) {
                 buildingDialog.setProgress("Extracting built-in android.jar...");
             }
@@ -799,8 +774,7 @@ public class Dp {
             /* Extract android.jar.zip to android.jar */
             new KB().a(androidJarPath, BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH.getAbsolutePath());
         }
-        /* If necessary, update dexs.zip */
-        if (a(baseAssetsPath + dexsArchiveName, dexsArchivePath)) {
+        if (hasFileChanged(baseAssetsPath + dexsArchiveName, dexsArchivePath)) {
             if (buildingDialog != null) {
                 buildingDialog.setProgress("Extracting built-in libraries' DEX files...");
             }
@@ -811,8 +785,7 @@ public class Dp {
             /* Extract dexs.zip to dexs/ */
             new KB().a(dexsArchivePath, dexsDirectoryPath);
         }
-        /* If necessary, update libs.zip */
-        if (a(baseAssetsPath + libsArchiveName, libsArchivePath)) {
+        if (hasFileChanged(baseAssetsPath + libsArchiveName, libsArchivePath)) {
             if (buildingDialog != null) {
                 buildingDialog.setProgress("Extracting built-in libraries' resources...");
             }
@@ -823,10 +796,8 @@ public class Dp {
             /* Extract libs.zip to libs/ */
             new KB().a(libsArchivePath, libsDirectoryPath);
         }
-        /* If necessary, update core-lambda-stubs.jar */
-        a(baseAssetsPath + coreLambdaStubsJarName, coreLambdaStubsJarPath);
-        /* If necessary, update testkey.zip */
-        if (a(baseAssetsPath + testkeyArchiveName, testkeyArchivePath)) {
+        hasFileChanged(baseAssetsPath + coreLambdaStubsJarName, coreLambdaStubsJarPath);
+        if (hasFileChanged(baseAssetsPath + testkeyArchiveName, testkeyArchivePath)) {
             if (buildingDialog != null) {
                 buildingDialog.setProgress("Extracting built-in signing keys...");
             }
@@ -837,7 +808,7 @@ public class Dp {
             /* Extract testkey.zip to testkey/ */
             new KB().a(testkeyArchivePath, testkeyDirectoryPath);
         }
-        if (yq.N.isAppCompatUsed) {
+        if (yq.N.g) {
             builtInLibraryManager.a(BuiltInLibraries.ANDROIDX_APPCOMPAT);
             builtInLibraryManager.a(BuiltInLibraries.ANDROIDX_COORDINATORLAYOUT);
             builtInLibraryManager.a(BuiltInLibraries.MATERIAL);
@@ -879,19 +850,25 @@ public class Dp {
     }
 
     /**
-     * Sign the APK file with testkey.
-     * This method supports APK Signature Scheme V1 (JAR signing) only.
+     * Sign the debug APK file with testkey.
+     * <p>
+     * This method uses apksigner, but kellinwood's zipsigner as fallback.
      */
-    public void k() throws GeneralSecurityException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-        ZipSigner zipSigner = new ZipSigner();
-        KeyStoreFileManager.setProvider(new BouncyCastleProvider());
-        zipSigner.setKeymode(ZipSigner.KEY_TESTKEY);
-        zipSigner.signZip(yq.G, yq.H);
+    public void signDebugApk() throws GeneralSecurityException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        if (Build.VERSION.SDK_INT >= 26) {
+            ApkSigner signer = new ApkSigner();
+            signer.signWithTestKey(yq.unsignedUnalignedApkPath, yq.finalToInstallApkPath, null);
+        } else {
+            ZipSigner zipSigner = new ZipSigner();
+            KeyStoreFileManager.setProvider(new BouncyCastleProvider());
+            zipSigner.setKeymode(ZipSigner.KEY_TESTKEY);
+            zipSigner.signZip(yq.unsignedUnalignedApkPath, yq.finalToInstallApkPath);
+        }
     }
 
-    private void mergeDexes(String target, List<Dex> dexes) throws IOException {
+    private void mergeDexes(File target, List<Dex> dexes) throws IOException {
         DexMerger merger = new DexMerger(dexes.toArray(new Dex[0]), CollisionPolicy.KEEP_FIRST, new DxContext());
-        merger.merge().writeTo(new File(target));
+        merger.merge().writeTo(target);
     }
 
     /**
@@ -934,9 +911,10 @@ public class Dp {
             }
         }
         sb.append("\n");
-        FileUtil.writeFile(yq.rules_generated, sb.toString());
+        sb.append("-keep class ").append(yq.packageName).append(".R { *; }").append('\n');
+        FileUtil.writeFile(yq.proGuardAutoGeneratedExclusions, sb.toString());
         args.add("-include");
-        args.add(yq.rules_generated);
+        args.add(yq.proGuardAutoGeneratedExclusions);
     }
 
     public void runProguard() throws IOException {
@@ -949,7 +927,7 @@ public class Dp {
 
         /* Include ProGuard rules generated by AAPT2 */
         args.add("-include");
-        args.add(yq.aapt_rules);
+        args.add(yq.aaptProGuardRules);
 
         /* Include custom ProGuard rules */
         args.add("-include");
@@ -966,7 +944,7 @@ public class Dp {
 
         /* Include compiled Java classes (?) IT SAYS -in*jar*s, so why include .class es? */
         args.add("-injars");
-        args.add(yq.u);
+        args.add(yq.compiledClassesPath);
 
         for (HashMap<String, Object> hashMap : mll.list) {
             String obj = hashMap.get("name").toString();
@@ -976,16 +954,16 @@ public class Dp {
             }
         }
         args.add("-libraryjars");
-        args.add(classpath());
+        args.add(getProGuardClasspath());
         args.add("-outjars");
-        args.add(yq.classes_proguard);
+        args.add(yq.classesProGuardPath);
         if (proguard.isDebugFilesEnabled()) {
             args.add("-printseeds");
-            args.add(yq.printseeds);
+            args.add(yq.proGuardSeedsPath);
             args.add("-printusage");
-            args.add(yq.printusage);
+            args.add(yq.proGuardUsagePath);
             args.add("-printmapping");
-            args.add(yq.printmapping);
+            args.add(yq.proGuardMappingPath);
         }
         LogUtil.d(TAG, "About to run ProGuard with these arguments: " + args);
 
@@ -1007,7 +985,7 @@ public class Dp {
 
     public void runStringfog() {
         try {
-            StringFogMappingPrinter stringFogMappingPrinter = new StringFogMappingPrinter(new File(yq.t,
+            StringFogMappingPrinter stringFogMappingPrinter = new StringFogMappingPrinter(new File(yq.binDirectoryPath,
                     "stringFogMapping.txt"));
             StringFogClassInjector stringFogClassInjector = new StringFogClassInjector(new String[0],
                     "UTF-8",
@@ -1016,18 +994,18 @@ public class Dp {
                     stringFogMappingPrinter);
             stringFogMappingPrinter.startMappingOutput();
             stringFogMappingPrinter.ouputInfo("UTF-8", "com.github.megatronking.stringfog.xor.StringFogImpl");
-            stringFogClassInjector.doFog2ClassInDir(new File(yq.u));
-            KB.a(context, "stringfog/stringfog.zip", yq.u);
+            stringFogClassInjector.doFog2ClassInDir(new File(yq.compiledClassesPath));
+            KB.a(context, "stringfog/stringfog.zip", yq.compiledClassesPath);
         } catch (Exception e) {
             LogUtil.e("Stringfog", e.toString());
         }
     }
 
     /**
-     * Calls {@link #runZipalign(String, String)} with {@link yq#G} and {@link yq#alignedApkPath}.
+     * Calls {@link #runZipalign(String, String)} with {@link yq#unsignedUnalignedApkPath} and {@link yq#unsignedAlignedApkPath}.
      */
     public void runZipalign() throws By {
-        runZipalign(yq.G, yq.alignedApkPath);
+        runZipalign(yq.unsignedUnalignedApkPath, yq.unsignedAlignedApkPath);
     }
 
     public void runZipalign(String inPath, String outPath) throws By {
@@ -1045,5 +1023,4 @@ public class Dp {
 
         LogUtil.d(TAG, "zipalign took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
     }
-
 }

@@ -53,6 +53,7 @@ public class ManagePermissionActivity extends Activity {
         sv.setIconifiedByDefault(true);
         sv.clearFocus();
         sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
             public boolean onQueryTextChange(String newText) {
                 String lowerCase = newText.toLowerCase();
                 ArrayList<String> arrayList = new ArrayList<>();
@@ -65,6 +66,7 @@ public class ManagePermissionActivity extends Activity {
                 return true;
             }
 
+            @Override
             public boolean onQueryTextSubmit(String query) {
                 return true;
             }
@@ -73,7 +75,7 @@ public class ManagePermissionActivity extends Activity {
 
     public void initToolbar() {
         ((TextView) findViewById(2131232458)).setText("Permission Manager");
-        ImageView back = (ImageView) findViewById(2131232457);
+        ImageView back = findViewById(2131232457);
         Helper.applyRipple(this, back);
         back.setOnClickListener(Helper.getBackPressedClickListener(this));
         ImageView resetPermissions = findViewById(2131232459);
@@ -94,6 +96,7 @@ public class ManagePermissionActivity extends Activity {
         });
     }
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(2131427786);
@@ -101,8 +104,8 @@ public class ManagePermissionActivity extends Activity {
             numProj = getIntent().getStringExtra("sc_id");
             frc = new FileResConfig(numProj);
         }
-        sv = (SearchView) findViewById(2131232363);
-        lv = (ListView) findViewById(2131232364);
+        sv = findViewById(2131232363);
+        lv = findViewById(2131232364);
         arrayList = new ArrayList<>();
         checkFile();
         setItems();
@@ -125,24 +128,28 @@ public class ManagePermissionActivity extends Activity {
             numProj = str;
         }
 
+        @Override
         public int getCount() {
             return namePerm.size();
         }
 
+        @Override
         public String getItem(int i) {
             return namePerm.get(i);
         }
 
+        @Override
         public long getItemId(int i) {
-            return (long) i;
+            return i;
         }
 
+        @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 convertView = getLayoutInflater().inflate(2131427789, null);
             }
 
-            CheckBox checkBox = (CheckBox) convertView.findViewById(2131232370);
+            CheckBox checkBox = convertView.findViewById(2131232370);
             checkBox.setText(namePerm.get(position));
             checkBox.setOnCheckedChangeListener((button, checked) -> {
                 if (checked) {

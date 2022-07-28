@@ -1,5 +1,7 @@
 package mod.tyron.compiler;
 
+import static com.besome.sketch.SketchApplication.getContext;
+
 import android.util.Log;
 
 import org.eclipse.jdt.internal.compiler.batch.Main;
@@ -22,8 +24,6 @@ import mod.hey.studios.build.BuildSettings;
 import mod.jbk.util.LogUtil;
 import mod.tyron.compiler.file.JavaFile;
 
-import static com.besome.sketch.SketchApplication.getContext;
-
 public class IncrementalJavaCompiler extends Compiler {
 
     public static final String TAG = IncrementalJavaCompiler.class.getSimpleName();
@@ -44,13 +44,13 @@ public class IncrementalJavaCompiler extends Compiler {
     private Compiler.Result onResultListener;
 
     public IncrementalJavaCompiler(yq projectConfig) {
-        SAVE_PATH = FileUtil.getExternalStorageDir() + "/.sketchware/mysc/" + projectConfig.b + "/incremental";
+        SAVE_PATH = FileUtil.getExternalStorageDir() + "/.sketchware/mysc/" + projectConfig.sc_id + "/incremental";
 
         this.projectConfig = projectConfig;
-        buildSettings = new BuildSettings(projectConfig.b);
+        buildSettings = new BuildSettings(projectConfig.sc_id);
         compileHelper = new Dp(getContext(), projectConfig);
-        compileHelper.j();
-        manageLocalLibrary = new ManageLocalLibrary(projectConfig.b);
+        compileHelper.getBuiltInLibrariesReady();
+        manageLocalLibrary = new ManageLocalLibrary(projectConfig.sc_id);
         fileUtil = new oB(false);
         libs = new File(getContext().getFilesDir(), "libs");
     }
@@ -66,10 +66,10 @@ public class IncrementalJavaCompiler extends Compiler {
         //combine all the java files from sketchware pro
         ArrayList<JavaFile> newFiles = new ArrayList<>(getSketchwareFiles());
         //add original sketchware generated files
-        newFiles.addAll(findJavaFiles(projectConfig.c + "/app/src/main/java"));
+        newFiles.addAll(findJavaFiles(projectConfig.projectMyscPath + "/app/src/main/java"));
 
         //add R.java files
-        newFiles.addAll(findJavaFiles(projectConfig.c + "/gen"));
+        newFiles.addAll(findJavaFiles(projectConfig.projectMyscPath + "/gen"));
 
         for (String library : getBuiltInLibraries()) {
             JavaFile rFile = new JavaFile(library + "/R.java");
@@ -120,7 +120,7 @@ public class IncrementalJavaCompiler extends Compiler {
         args.add("-proc:none");
 
         args.add("-cp");
-        args.add(compileHelper.classpath());
+        args.add(compileHelper.getProGuardClasspath());
 
         for (File file : projectJavaFiles) {
             args.add(file.getAbsolutePath());
@@ -167,16 +167,16 @@ public class IncrementalJavaCompiler extends Compiler {
     private ArrayList<JavaFile> getSketchwareFiles() {
         ArrayList<JavaFile> arrayList = new ArrayList<>();
 
-        if (FileUtil.isExistFile(filePathUtil.getPathJava(projectConfig.b))) {
-            arrayList.addAll(findJavaFiles(filePathUtil.getPathJava(projectConfig.b)));
+        if (FileUtil.isExistFile(filePathUtil.getPathJava(projectConfig.sc_id))) {
+            arrayList.addAll(findJavaFiles(filePathUtil.getPathJava(projectConfig.sc_id)));
         }
 
-        if (FileUtil.isExistFile(filePathUtil.getPathBroadcast(projectConfig.b))) {
-            arrayList.addAll(findJavaFiles(filePathUtil.getPathBroadcast(projectConfig.b)));
+        if (FileUtil.isExistFile(filePathUtil.getPathBroadcast(projectConfig.sc_id))) {
+            arrayList.addAll(findJavaFiles(filePathUtil.getPathBroadcast(projectConfig.sc_id)));
         }
 
-        if (FileUtil.isExistFile(filePathUtil.getPathService(projectConfig.b))) {
-            arrayList.addAll(findJavaFiles(filePathUtil.getPathService(projectConfig.b)));
+        if (FileUtil.isExistFile(filePathUtil.getPathService(projectConfig.sc_id))) {
+            arrayList.addAll(findJavaFiles(filePathUtil.getPathService(projectConfig.sc_id)));
         }
 
         return arrayList;
@@ -369,7 +369,7 @@ public class IncrementalJavaCompiler extends Compiler {
         String path = getContext().getFilesDir() + "/libs/libs/";
         ArrayList<String> arrayList = new ArrayList<>();
 
-        if (projectConfig.N.isAppCompatUsed) {
+        if (projectConfig.N.g) {
             arrayList.add(":" + path + "appcompat-1.0.0");
             arrayList.add(":" + path + "coordinatorlayout-1.0.0");
             arrayList.add(":" + path + "material-1.0.0");
